@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ENT211 / CED300 — Interactive Quiz App</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #21262d;
+    --surface3: #30363d;
+    --accent: #58a6ff;
+    --accent2: #7c3aed;
+    --green: #3fb950;
+    --red: #f85149;
+    --yellow: #d29922;
+    --text: #e6edf3;
+    --text2: #8b949e;
+    --border: #30363d;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+
+  /* ── SCREENS ── */
+  .screen { display: none; min-height: 100vh; padding: 20px; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  /* ── HOME ── */
+  #home { align-items: center; justify-content: center; text-align: center; gap: 24px; }
+  .logo { font-size: 3rem; }
+  .app-title { font-size: 2rem; font-weight: 800; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .app-sub { color: var(--text2); font-size: 1rem; }
+  .home-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; width: 100%; max-width: 600px; margin-top: 10px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; text-align: center; }
+  .stat-card .val { font-size: 1.8rem; font-weight: 800; color: var(--accent); }
+  .stat-card .lbl { font-size: 0.75rem; color: var(--text2); margin-top: 4px; }
+  .btn { border: none; border-radius: 8px; padding: 12px 24px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .btn-primary { background: var(--accent); color: #0d1117; }
+  .btn-primary:hover { background: #79c0ff; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(88,166,255,0.3); }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--surface3); }
+  .btn-danger { background: var(--red); color: #fff; }
+  .btn-danger:hover { opacity: 0.85; }
+  .btn-green { background: var(--green); color: #0d1117; }
+  .btn-green:hover { opacity: 0.85; }
+  .btn-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+  /* ── CONFIG ── */
+  #config { align-items: center; justify-content: center; }
+  .config-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 36px; max-width: 480px; width: 100%; }
+  .config-box h2 { font-size: 1.5rem; margin-bottom: 24px; text-align: center; }
+  .field { margin-bottom: 20px; }
+  .field label { display: block; font-size: 0.875rem; color: var(--text2); margin-bottom: 8px; font-weight: 600; }
+  .field input, .field select { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-size: 1rem; outline: none; }
+  .field input:focus, .field select:focus { border-color: var(--accent); }
+  .chip-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .chip { background: var(--surface2); border: 2px solid var(--border); border-radius: 8px; padding: 8px 18px; cursor: pointer; font-size: 0.9rem; transition: all 0.15s; }
+  .chip.active { border-color: var(--accent); background: rgba(88,166,255,0.1); color: var(--accent); }
+
+  /* ── QUIZ ── */
+  #quiz { max-width: 760px; margin: 0 auto; width: 100%; gap: 20px; }
+  .quiz-header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .q-progress { flex: 1; background: var(--surface2); border-radius: 999px; height: 8px; overflow: hidden; min-width: 80px; }
+  .q-progress-bar { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 999px; transition: width 0.4s; }
+  .q-counter { font-size: 0.875rem; color: var(--text2); white-space: nowrap; }
+  .timer-ring { position: relative; width: 52px; height: 52px; flex-shrink: 0; }
+  .timer-ring svg { transform: rotate(-90deg); }
+  .timer-ring .timer-num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; }
+  .topic-badge { font-size: 0.75rem; background: rgba(124,58,237,0.2); color: #a78bfa; border: 1px solid rgba(124,58,237,0.3); border-radius: 6px; padding: 3px 10px; }
+  .question-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; }
+  .q-text { font-size: 1.1rem; line-height: 1.6; margin-bottom: 24px; }
+  .options { display: flex; flex-direction: column; gap: 12px; }
+  .option { background: var(--surface2); border: 2px solid var(--border); border-radius: 10px; padding: 14px 18px; cursor: pointer; font-size: 0.95rem; transition: all 0.15s; display: flex; align-items: flex-start; gap: 12px; }
+  .option:hover:not(.disabled) { border-color: var(--accent); background: rgba(88,166,255,0.07); }
+  .option.selected { border-color: var(--accent); background: rgba(88,166,255,0.12); }
+  .option.correct { border-color: var(--green); background: rgba(63,185,80,0.12); }
+  .option.wrong { border-color: var(--red); background: rgba(248,81,73,0.12); }
+  .option.disabled { cursor: default; }
+  .opt-letter { font-weight: 700; color: var(--text2); min-width: 20px; }
+  .feedback-box { border-radius: 12px; padding: 18px 20px; margin-top: 16px; font-size: 0.9rem; line-height: 1.6; animation: fadeIn 0.3s; }
+  .feedback-box.correct-fb { background: rgba(63,185,80,0.1); border: 1px solid rgba(63,185,80,0.3); }
+  .feedback-box.wrong-fb { background: rgba(248,81,73,0.1); border: 1px solid rgba(248,81,73,0.3); }
+  .feedback-box.timeout-fb { background: rgba(210,153,34,0.1); border: 1px solid rgba(210,153,34,0.3); }
+  .fb-title { font-weight: 700; font-size: 1rem; margin-bottom: 6px; }
+  .fb-title.c { color: var(--green); }
+  .fb-title.w { color: var(--red); }
+  .fb-title.t { color: var(--yellow); }
+  .next-btn-row { display: flex; justify-content: flex-end; margin-top: 14px; }
+
+  /* ── RESULTS ── */
+  #results { max-width: 800px; margin: 0 auto; width: 100%; gap: 20px; }
+  .score-hero { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; text-align: center; }
+  .score-big { font-size: 4rem; font-weight: 900; }
+  .score-big.great { color: var(--green); }
+  .score-big.ok { color: var(--yellow); }
+  .score-big.bad { color: var(--red); }
+  .score-label { color: var(--text2); margin-top: 6px; }
+  .meta-row { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
+  .meta-item { text-align: center; }
+  .meta-item .mv { font-size: 1.3rem; font-weight: 700; }
+  .meta-item .ml { font-size: 0.75rem; color: var(--text2); }
+  .section-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 14px; }
+  .topic-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+  .topic-name { min-width: 180px; font-size: 0.875rem; flex-shrink: 0; }
+  .topic-bar-wrap { flex: 1; background: var(--surface2); border-radius: 999px; height: 10px; overflow: hidden; min-width: 80px; }
+  .topic-bar { height: 100%; border-radius: 999px; transition: width 0.6s 0.2s; }
+  .topic-pct { font-size: 0.8rem; color: var(--text2); min-width: 36px; text-align: right; }
+  .weak-tag { font-size: 0.7rem; background: rgba(248,81,73,0.2); color: var(--red); border: 1px solid rgba(248,81,73,0.3); border-radius: 4px; padding: 2px 7px; }
+  .review-item { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 10px; }
+  .review-q { font-size: 0.875rem; font-weight: 600; margin-bottom: 8px; }
+  .review-line { font-size: 0.8rem; color: var(--text2); margin-bottom: 4px; }
+  .review-line span { font-weight: 600; }
+  .review-line .cr { color: var(--green); }
+  .review-line .wr { color: var(--red); }
+  .review-expl { font-size: 0.8rem; color: var(--text2); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); line-height: 1.5; }
+  .card-section { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
+  .reco-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .reco-item:last-child { border-bottom: none; }
+  .reco-num { background: var(--red); color: #fff; border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; flex-shrink: 0; }
+  .reco-num.ok { background: var(--yellow); }
+
+  /* ── HISTORY ── */
+  #history { max-width: 760px; margin: 0 auto; width: 100%; gap: 20px; }
+  .hist-item { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .hist-score { font-size: 1.5rem; font-weight: 800; min-width: 56px; }
+  .hist-meta { flex: 1; }
+  .hist-meta .ht { font-size: 0.875rem; font-weight: 600; }
+  .hist-meta .hd { font-size: 0.75rem; color: var(--text2); margin-top: 3px; }
+
+  /* ── PROGRESS ── */
+  .progress-chart { background: var(--surface2); border-radius: 10px; padding: 16px; height: 100px; display: flex; align-items: flex-end; gap: 6px; overflow-x: auto; }
+  .bar-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0; }
+  .bar-col { width: 28px; border-radius: 4px 4px 0 0; transition: height 0.5s; min-height: 4px; }
+  .bar-label { font-size: 0.6rem; color: var(--text2); }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+  .pulse { animation: pulse 1s infinite; }
+
+  /* ── NAV ── */
+  .top-nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
+  .nav-title { font-weight: 700; font-size: 1rem; }
+  .nav-actions { display: flex; gap: 8px; }
+
+  /* mobile */
+  @media (max-width: 480px) {
+    .app-title { font-size: 1.5rem; }
+    .question-card { padding: 18px; }
+    .q-text { font-size: 1rem; }
+    .score-big { font-size: 3rem; }
+    .topic-name { min-width: 120px; font-size: 0.8rem; }
+  }
+
+  /* ── PRINT/PDF ── */
+  @media print {
+    body { background: #fff; color: #000; }
+    .no-print { display: none !important; }
+    .print-section { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ════════════ HOME SCREEN ════════════ -->
+<div id="home" class="screen active">
+  <div class="logo">🎓</div>
+  <div class="app-title">ENT211 / CED300 Quiz</div>
+  <div class="app-sub">Interactive Exam Prep — University of Benin</div>
+
+  <div class="home-cards">
+    <div class="stat-card"><div class="val" id="totalQ">330</div><div class="lbl">Questions</div></div>
+    <div class="stat-card"><div class="val" id="totalSessions">0</div><div class="lbl">Sessions</div></div>
+    <div class="stat-card"><div class="val" id="bestScore">—</div><div class="lbl">Best Score</div></div>
+    <div class="stat-card"><div class="val" id="avgAcc">—</div><div class="lbl">Avg Accuracy</div></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="showScreen('config')">▶ Start Quiz</button>
+    <button class="btn btn-secondary" onclick="showScreen('history')">📊 History</button>
+  </div>
+  <div style="margin-top:24px;font-size:0.85rem;font-weight:800;color:var(--text2);letter-spacing:0.05em">⚡ VIBE CODED BY ACE</div>
+</div>
+
+<!-- ════════════ CONFIG SCREEN ════════════ -->
+<div id="config" class="screen">
+  <div style="max-width:480px;width:100%;margin:auto;padding:40px 0">
+    <div class="config-box">
+      <h2>⚙️ Session Setup</h2>
+      <div class="field">
+        <label>Number of Questions</label>
+        <input type="number" id="numQ" min="5" max="330" value="20" placeholder="e.g. 20">
+      </div>
+      <div class="field">
+        <label>Timer per Question</label>
+        <div class="chip-row">
+          <div class="chip active" data-t="15" onclick="selectTimer(15)">15s</div>
+          <div class="chip" data-t="30" onclick="selectTimer(30)">30s</div>
+          <div class="chip" data-t="60" onclick="selectTimer(60)">60s</div>
+          <div class="chip" data-t="0" onclick="selectTimer(0)">No Limit</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Topic Filter</label>
+        <select id="topicFilter">
+          <option value="all">All Topics</option>
+          <option value="Basic Concepts">Basic Concepts of Entrepreneurship</option>
+          <option value="Feasibility">Feasibility Study & Business Planning</option>
+          <option value="Business Opportunities">Business Opportunities & SWOT</option>
+          <option value="Registration">Enterprise Formation & Registration</option>
+          <option value="HRM">Human Resource Management</option>
+          <option value="Technology">Technology Management</option>
+          <option value="Financing">Financing & SME Support</option>
+          <option value="Marketing">Marketing, Pricing & Distribution</option>
+          <option value="Ethics">Ethics & CSR</option>
+          <option value="Contract">Contract Law & Taxation</option>
+          <option value="Business Forms">Business Forms & General</option>
+          <option value="Nigerian Agencies">Nigerian Agencies & Government</option>
+        </select>
+      </div>
+      <div class="btn-row" style="margin-top:8px">
+        <button class="btn btn-secondary" onclick="showScreen('home')">← Back</button>
+        <button class="btn btn-primary" onclick="startQuiz()">Start ▶</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ QUIZ SCREEN ════════════ -->
+<div id="quiz" class="screen">
+  <div class="quiz-header">
+    <div class="q-counter" id="qCounter">Q 1 / 20</div>
+    <div class="q-progress"><div class="q-progress-bar" id="qProgressBar" style="width:0%"></div></div>
+    <div class="topic-badge" id="topicBadge">Topic</div>
+    <div class="timer-ring" id="timerRing">
+      <svg width="52" height="52" viewBox="0 0 52 52">
+        <circle cx="26" cy="26" r="22" fill="none" stroke="#30363d" stroke-width="4"/>
+        <circle id="timerCircle" cx="26" cy="26" r="22" fill="none" stroke="#58a6ff" stroke-width="4"
+          stroke-dasharray="138.2" stroke-dashoffset="0" stroke-linecap="round"/>
+      </svg>
+      <div class="timer-num" id="timerNum">—</div>
+    </div>
+  </div>
+
+  <div class="question-card" id="questionCard">
+    <div class="q-text" id="qText">Loading...</div>
+    <div class="options" id="optionsContainer"></div>
+    <div id="feedbackBox"></div>
+  </div>
+
+  <div class="next-btn-row">
+    <button class="btn btn-primary" id="nextBtn" style="display:none" onclick="nextQuestion()">Next →</button>
+  </div>
+</div>
+
+<!-- ════════════ RESULTS SCREEN ════════════ -->
+<div id="results" class="screen">
+  <div class="top-nav no-print">
+    <span class="nav-title">📋 Session Results</span>
+    <div class="nav-actions">
+      <button class="btn btn-secondary" onclick="exportPDF()">📄 Export PDF</button>
+      <button class="btn btn-primary" onclick="showScreen('home')">🏠 Home</button>
+    </div>
+  </div>
+
+  <div class="score-hero">
+    <div class="score-big" id="scoreBig">0%</div>
+    <div class="score-label" id="scoreLabel">Keep practising!</div>
+    <div class="meta-row">
+      <div class="meta-item"><div class="mv" id="metaCorrect">0</div><div class="ml">Correct</div></div>
+      <div class="meta-item"><div class="mv" id="metaWrong">0</div><div class="ml">Wrong</div></div>
+      <div class="meta-item"><div class="mv" id="metaTime">0s</div><div class="ml">Total Time</div></div>
+      <div class="meta-item"><div class="mv" id="metaTimeout">0</div><div class="ml">Timeouts</div></div>
+    </div>
+  </div>
+
+  <div class="card-section">
+    <div class="section-title">📊 Topic Accuracy</div>
+    <div id="topicBreakdown"></div>
+  </div>
+
+  <div class="card-section" id="weakSection" style="display:none">
+    <div class="section-title">⚠️ Weak Topics — Study Recommendations</div>
+    <div id="weakList"></div>
+  </div>
+
+  <div class="card-section">
+    <div class="section-title">📝 Question Review</div>
+    <div id="reviewList"></div>
+  </div>
+
+  <div class="btn-row no-print" style="margin-bottom:20px">
+    <button class="btn btn-primary" onclick="showScreen('config')">🔄 New Session</button>
+    <button class="btn btn-secondary" onclick="showScreen('home')">🏠 Home</button>
+  </div>
+</div>
+
+<!-- ════════════ HISTORY SCREEN ════════════ -->
+<div id="history" class="screen">
+  <div class="top-nav">
+    <span class="nav-title">📈 Session History</span>
+    <button class="btn btn-secondary" onclick="showScreen('home')">← Back</button>
+  </div>
+  <div style="max-width:760px;margin:auto;padding:20px;width:100%;display:flex;flex-direction:column;gap:20px">
+    <div class="card-section">
+      <div class="section-title">Score Trend</div>
+      <div class="progress-chart" id="trendChart"></div>
+    </div>
+    <div id="histList"></div>
+    <button class="btn btn-danger" onclick="clearHistory()">🗑 Clear History</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  QUESTION BANK — 330 Questions
+//  Sources: CED300 PQ3, ENT211 PQ120, 
+//           Lecture Notes, Compiled Summary
+// ══════════════════════════════════════════
+const QB = [
+// ── BASIC CONCEPTS ──
+{t:"Basic Concepts",q:"The process of identifying and exploiting a business opportunity in an environment can be referred to as:",o:["Entrepreneur","Entrepreneurship","Entrepreneurial Development","Enterpreneurship"],a:1,e:"Entrepreneurship is the PROCESS of identifying and exploiting business opportunities. An entrepreneur is the PERSON who performs this process."},
+{t:"Basic Concepts",q:"The first academic usage of the word 'entrepreneur' is credited to an economist called:",o:["Alfred Marshall","Adam Smith","Warren Buffett","Richard Cantillon"],a:3,e:"Richard Cantillon (Irish-French economist) is credited with the first formal academic use of the term 'entrepreneur' in the 18th century."},
+{t:"Basic Concepts",q:"The term 'entrepreneur' is of _______ origin — 'Entreprendre' meaning 'to undertake'.",o:["British","Latin","German","French"],a:3,e:"The word 'entrepreneur' comes from the French verb 'Entreprendre' meaning 'to undertake'. It was first formally used by Richard Cantillon."},
+{t:"Basic Concepts",q:"A person that has possession of an enterprise or venture and assumes significant accountability for the inherent risks and the outcome of the enterprise is known as:",o:["An entrepreneurship","An entrepreneur","A shareholder","A manager"],a:1,e:"An entrepreneur owns and operates a venture while bearing personal accountability for its risks and outcomes. Entrepreneurship is the PROCESS, not the person."},
+{t:"Basic Concepts",q:"_______ is the process of performing the roles of an entrepreneur.",o:["Entrepreneur","Entrepreneurship","Marketing","Organizing"],a:1,e:"Entrepreneurship is the PROCESS through which entrepreneurial roles are performed — identifying opportunities, mobilizing resources, taking risks, and creating value."},
+{t:"Basic Concepts",q:"The first phase in entrepreneurial activities is:",o:["Gestation","Infancy","Conception","Adolescence"],a:2,e:"The phases of entrepreneurship follow: Conception → Gestation → Infancy → Adolescence. Conception is the birth of the idea — the very first step."},
+{t:"Basic Concepts",q:"Which of the following is NOT among the phases of entrepreneurship?",o:["Adolescence","Conception","Enlightenment","Gestation"],a:2,e:"The four phases are Conception, Gestation, Infancy, and Adolescence. 'Enlightenment' is NOT one of them."},
+{t:"Basic Concepts",q:"Which of the following is NOT a characteristic of an entrepreneur?",o:["Optimism","Innovation","Emotional stability","External locus of control belief"],a:3,e:"Entrepreneurs have an INTERNAL locus of control — they believe they control their outcomes. An external locus of control (believing outcomes are due to luck/fate) is the OPPOSITE of the entrepreneurial mindset."},
+{t:"Basic Concepts",q:"In a developing society, entrepreneurship plays the following roles EXCEPT:",o:["Generates unemployment","Increases productivity through innovation","Ensures increased resource utilization","Facilitates the transfer of technology"],a:0,e:"Entrepreneurship REDUCES unemployment — it GENERATES employment. All other options are actual roles of entrepreneurship."},
+{t:"Basic Concepts",q:"Which of the following best describes the Nigerian state?",o:["A developed economy","A developing economy","An underdeveloped economy","About to develop economy"],a:1,e:"Nigeria is classified as a DEVELOPING economy — growing but still facing challenges like poverty, unemployment, and infrastructure deficits."},
+{t:"Basic Concepts",q:"The process of structural transformation of an economy towards a modern, technologically advanced economy based on services and manufacturing is referred to as:",o:["Entrepreneurship","Public policy","Economic development","Marketing"],a:2,e:"Economic development is the structural transformation toward a modern, technologically advanced economy. It encompasses improvements in income, technology, and social well-being."},
+{t:"Basic Concepts",q:"Nigeria's Vision 2020 is an example of:",o:["Micro-economic goal","Macro-economic goal","Geo-political goal","Bilateral relationship"],a:1,e:"Vision 2020 targeted the overall national economy (GDP growth, employment, industrial output), making it a MACRO-economic goal."},
+{t:"Basic Concepts",q:"The central ideas of the conception of entrepreneurship incorporate the following EXCEPT:",o:["Uncertainty","Risk-taking","Innovation, perception and change","None of the above"],a:3,e:"All options (Uncertainty, Risk-taking, Innovation/perception/change) ARE central concepts of entrepreneurship. Therefore the answer is 'None of the above'."},
+{t:"Basic Concepts",q:"The following are some specific contributions of entrepreneurship to society EXCEPT:",o:["Engine for economic growth","Improved welfare","Free and fair election","Self-fulfilment"],a:2,e:"Free and fair elections are a matter of democratic governance, NOT a contribution of entrepreneurship."},
+{t:"Basic Concepts",q:"Joseph Schumpeter's concept of 'Creative Destruction' refers to:",o:["Physical destruction of factories","How entrepreneurs disrupt markets by introducing innovations","Reducing competition through mergers","Government regulation of markets"],a:1,e:"Creative Destruction (Schumpeter, 1934) describes how entrepreneurs disrupt existing markets by introducing new products, services, or production processes."},
+{t:"Basic Concepts",q:"One of these sets defines the characteristics of a successful entrepreneur:",o:["Innovation, teambuilding and risk averse","Innovativeness, decisiveness and curiosity","Innovativeness, duplicity and teambuilding","Innovation, risk averse and duplicity"],a:1,e:"Successful entrepreneurs are characterized by innovativeness, decisiveness, and curiosity — not duplicity or being risk averse."},
+{t:"Basic Concepts",q:"Jean Baptiste Say is credited for coining the term 'entrepreneur' in the:",o:["18th century","19th century","20th century","17th century"],a:1,e:"J.B. Say formally developed the concept of entrepreneurship in the 19th century, defining the entrepreneur as one who combines factors of production to create wealth."},
+{t:"Basic Concepts",q:"According to J.B. Say, entrepreneurs primarily:",o:["Work as government officials","Provide labor","Combine factors of production to create wealth","Manage trade unions"],a:2,e:"J.B. Say described entrepreneurs as individuals who organize land, labour, and capital to produce goods and services and generate wealth."},
+{t:"Basic Concepts",q:"Entrepreneurship can be nascent or necessity entrepreneurship. Necessity entrepreneurship results from:",o:["Choice or opportunity","Unavailability of paid employment","Government grants","Innovation"],a:1,e:"Necessity entrepreneurship results from the unavailability of paid employment — people are pushed into business because they have no other option."},
+{t:"Basic Concepts",q:"Which of the following is NOT a characteristic of a set describing entrepreneurs? (d) short term sacrifice, good communication, good health and loner",o:["Awareness, optimism, autonomy and conceptual ability","Effectiveness, emotional stability, calm and meticulous","Innovation, highly organized, competition and unique service","Short term sacrifice, good communication, good health and loner"],a:3,e:"'Loner' contradicts the entrepreneurial spirit. Entrepreneurs are collaborative — they build networks and teams. Being a 'loner' is NOT an entrepreneurial characteristic."},
+{t:"Basic Concepts",q:"Which of the following best explains organizational inertia?",o:["Respect for those already existing in an organization","Learning from initial setback","Too big to change or inability to change","None of the above"],a:2,e:"Organizational inertia describes large organizations' tendency to resist change due to bureaucracy, entrenched culture, and established systems."},
+{t:"Basic Concepts",q:"Entrepreneurship contributes to economic development mainly through:",o:["Government taxation","Importation of goods","Innovation and job creation","Limiting competition"],a:2,e:"Entrepreneurs stimulate growth through innovation and employment generation — two key drivers of economic development."},
+{t:"Basic Concepts",q:"The word 'entrepreneur' first appeared in a French dictionary in:",o:["1650","1723","1800","1850"],a:1,e:"The word 'entrepreneur' first appeared in a French dictionary in 1723, and entered the English language in the mid-19th century."},
+{t:"Basic Concepts",q:"Entrepreneurship as a behavior emphasizes:",o:["Government policies","Personal traits such as creativity and initiative","Capital availability","Industrial regulations"],a:1,e:"The behavioral perspective of entrepreneurship focuses on entrepreneurial attitudes and traits like creativity, initiative, and risk-taking."},
+{t:"Basic Concepts",q:"Which of the following is NOT a characteristic of entrepreneurship?",o:["Innovation","Risk-taking","Creativity","Complete certainty of profit"],a:3,e:"Entrepreneurship involves uncertainty, not guaranteed profit. Complete certainty of profit contradicts the very nature of entrepreneurial risk."},
+
+// ── FEASIBILITY STUDY & BUSINESS PLANNING ──
+{t:"Feasibility",q:"The process of discussing a business plan with friends and advisers in order to reduce the risk of failure and losing money is known as:",o:["Enquiry","Business plan","A feasibility study","Business study"],a:2,e:"A feasibility study involves evaluating whether a business idea is practical and viable, including consulting advisers, to reduce the risk of failure."},
+{t:"Feasibility",q:"Which of these is TRUE about a feasibility study?",o:["It is carried out to know if the business venture is worth the effort","It is about business idea viability","It is carried out before a business plan","All of the above"],a:3,e:"All three are true: it assesses worthiness, evaluates viability, and is conducted BEFORE the business plan."},
+{t:"Feasibility",q:"Which of these is TRUE about a business plan?",o:["Developed only after confirming a business opportunity exists","Deals with business growth and sustainability","Prepared only after the business venture has been deemed feasible","All of the above"],a:3,e:"All three accurately describe a business plan. It follows and is based on the feasibility study."},
+{t:"Feasibility",q:"When the outcome of a feasibility study is written down in a document, that written document is known as:",o:["A feasibility statement","A business statement","A business plan","A feasibility document"],a:0,e:"The written output of a feasibility study is called a FEASIBILITY STATEMENT (or feasibility report). This is different from a business plan."},
+{t:"Feasibility",q:"Economic feasibility provides information EXCEPT:",o:["Project site","Availability of trained and trainable labour","The availability of infrastructure","The nature and extent of market"],a:3,e:"'Nature and extent of market' belongs to MARKET feasibility, not economic feasibility. Economic feasibility covers project site, labour, and infrastructure."},
+{t:"Feasibility",q:"The estimate of the proportion of the total market that a new business could reasonably expect to capture is known as:",o:["Feasibility study","Market share","Market survey","Market value"],a:1,e:"Market share is the proportion of total market sales that a business captures relative to competitors."},
+{t:"Feasibility",q:"Technical feasibility essentially involves all BUT ONE of the following:",o:["Production planning","Equipment requirement","Start-up cost","Package and staff level"],a:2,e:"Start-up cost belongs to FINANCIAL feasibility. Technical feasibility covers production planning, equipment, packaging, and staffing."},
+{t:"Feasibility",q:"The amount of money that is needed to start up a business is known as:",o:["Capital requirement","Start-up costs","Capital feasibility","Operating/production costs"],a:1,e:"Start-up costs are the initial one-time expenditure required to launch a new business — distinct from ongoing operating costs."},
+{t:"Feasibility",q:"_______ are ongoing costs which can be separated into fixed costs and variable costs.",o:["Start-up costs/capital","Operating/production costs","Revenue analysis","Source fund"],a:1,e:"Operating (production) costs are ongoing day-to-day costs divided into fixed costs (constant) and variable costs (change with output)."},
+{t:"Feasibility",q:"_______ is the cost that can be incurred even if production is NOT taking place.",o:["Fixed cost","Variable cost","Semi-variable cost","Marginal cost"],a:0,e:"Fixed costs are independent of production levels — they must be paid whether the business produces or not (e.g., rent, salaries)."},
+{t:"Feasibility",q:"Which of these is NOT an example of a fixed cost?",o:["Rent","Advertisement","Production","Power"],a:2,e:"'Production' costs (raw materials, direct labour) are VARIABLE — they increase with output. Rent, advertisement, and power are fixed costs."},
+{t:"Feasibility",q:"Total Revenue can be expressed as:",o:["TR = Selling Price – Fixed Cost","TR = Selling Price × Quantity Sold","TR = Selling Price + Profit","TR = Selling Price – Variable Cost"],a:1,e:"Total Revenue = Selling Price × Quantity Sold. This is the fundamental revenue formula."},
+{t:"Feasibility",q:"Profit is:",o:["P × Q","TC – VC","TR – FC","TR – TC"],a:3,e:"Profit = Total Revenue – Total Cost (TR – TC). When TR > TC, profit is positive; when TC > TR, there is a loss."},
+{t:"Feasibility",q:"Contribution is:",o:["TR – TC","TR – VC","TR – FC","TR / TC"],a:1,e:"Contribution (Margin) = TR – VC. This is the amount remaining after variable costs, which goes toward covering fixed costs and profit."},
+{t:"Feasibility",q:"Feasibility study covers such areas/scope as:",o:["Economic feasibility study","Market feasibility study","Technical feasibility study","All of the above"],a:3,e:"A complete feasibility study covers Economic, Market, Technical, and Financial feasibility areas."},
+{t:"Feasibility",q:"Who can conduct a feasibility study?",o:["The intended business owner with relevant skills OR a qualified consultant","A consultant with proprietary interest in the project","A consultant with a conflict of interest","An in-house analyst with personal stakes in the outcome"],a:0,e:"Only objective parties can conduct a feasibility study — the business owner (if skilled) or an unbiased qualified consultant. Conflict of interest disqualifies anyone."},
+{t:"Feasibility",q:"The reason for conducting a feasibility study is to:",o:["Narrow business alternatives and identify new opportunities","Provide quality information for decision making","Provide documentation and help secure loans","All of the above"],a:3,e:"All three are valid reasons for conducting a feasibility study."},
+{t:"Feasibility",q:"A business plan is a road map outlining the course the entrepreneur will take to get a business to an intended state. This is also called:",o:["Feasibility report","Business plan","Business report","Financial feasibility report"],a:1,e:"A business plan is exactly that — a written road map describing goals, operations, and strategies for achieving business objectives."},
+{t:"Feasibility",q:"The correct order of preparation is:",o:["Business plan then business idea","Feasibility study then business plan","Business idea then business registration","Business plan then feasibility study"],a:1,e:"Feasibility study PRECEDES business plan. You confirm viability first (feasibility study), then plan how to execute (business plan)."},
+{t:"Feasibility",q:"One of the following is NOT a component of a business plan:",o:["Executive Strategy","Executive Summary","Marketing Analysis","Budget"],a:0,e:"The standard components are Executive Summary, Business Description, Market Analysis, Organizational Structure, Marketing Plan, and Financial Plan. 'Executive Strategy' is not a recognized component name."},
+{t:"Feasibility",q:"Feasibility study is different from business plan because:",o:["Feasibility study is only for business projects","Business plan can be used for non-business projects","Feasibility study precedes business plan","Business plan precedes feasibility study"],a:2,e:"Feasibility study precedes business plan. Also, feasibility study can be for non-business projects, while business plan is only for business projects."},
+{t:"Feasibility",q:"A business plan describes:",o:["Goals of the business, the operations of the business and the business strategies","The goals of the business and the feasibility study","The goals of the business, the nature of the entrepreneur and the resources needed","All of the above"],a:0,e:"A business plan describes the goals, operations, and strategies of the business — not the feasibility study itself."},
+{t:"Feasibility",q:"A business plan may fail because of:",o:["Unstable market/economy","Cash flow challenges","Poor leadership","All of the above"],a:3,e:"Business plans can fail due to market instability, cash flow problems, poor leadership, and many other combined factors."},
+
+// ── BUSINESS OPPORTUNITIES & SWOT ──
+{t:"Business Opportunities",q:"Opportunities available to an organization can be grouped into:",o:["2","3","4","1"],a:0,e:"Opportunities are grouped into TWO: Internal opportunities (from within the organization) and External opportunities (from the environment)."},
+{t:"Business Opportunities",q:"Opportunities that arise from new processes, products, and techniques developed WITHIN the organization are known as:",o:["Internal opportunities","External opportunities","Spillover opportunities","None of the above"],a:0,e:"Internal opportunities are generated from within the organization through R&D, process improvements, or new product ideas."},
+{t:"Business Opportunities",q:"Opportunities that emerged from several exploitable circumstances available in the organization's ENVIRONMENT are known as:",o:["Internal opportunities","External opportunities","Spillover opportunities","None of the above"],a:1,e:"External opportunities come from the broader environment — economic, social, technological, or political changes outside the organization."},
+{t:"Business Opportunities",q:"Misfortune of competitors who are not performing well, providing an entrepreneur with the opportunity to do better, is known as:",o:["Internal opportunity","External opportunity","Spillover opportunity","None of the above"],a:2,e:"A spillover opportunity arises when a competitor fails or underperforms, leaving a market gap the entrepreneur can exploit."},
+{t:"Business Opportunities",q:"A business idea that requires a BRAND NEW concept is said to be:",o:["Incremental innovation","Radical innovation","Mixed innovation","Satisficing innovation"],a:1,e:"Radical innovation involves creating something completely new — a fundamentally different concept (e.g., the invention of the smartphone or internet)."},
+{t:"Business Opportunities",q:"A business idea that requires an improvement to a current product or service is said to be:",o:["Incremental innovation","Radical innovation","Mixed innovation","Satisficing innovation"],a:0,e:"Incremental innovation makes gradual improvements to existing products, services, or processes — the most common form of business innovation."},
+{t:"Business Opportunities",q:"_______ analysis is a technique for assessing a business, its resources and its environment.",o:["Survey","SWOT","SWEET","SWART"],a:1,e:"SWOT analysis evaluates Strengths, Weaknesses, Opportunities, and Threats — both internal (S,W) and external (O,T) dimensions."},
+{t:"Business Opportunities",q:"SWOT is an acronym for:",o:["Strategies, Weaknesses, Opportunities and Threats","Strengths, Wicknesses, Opportunities and Trades","Strengths, Witnesses, Opportunities and Threats","Strengths, Weaknesses, Opportunities and Threats"],a:3,e:"SWOT = Strengths (internal positive), Weaknesses (internal negative), Opportunities (external positive), Threats (external negative)."},
+{t:"Business Opportunities",q:"The SWOT process addresses:",o:["External strengths and weaknesses of entrepreneur","Internal strengths and opportunities of entrepreneurs","Internal and external — Strengths, Weaknesses, Opportunities, and Threats","Internal strengths and weaknesses only"],a:2,e:"SWOT covers BOTH internal factors (Strengths and Weaknesses) and external factors (Opportunities and Threats)."},
+{t:"Business Opportunities",q:"Threats that come from lack of resources to exploit an identified opportunity can be regarded as:",o:["Internal","External","Spillover","None of the above"],a:0,e:"A threat from lack of internal resources (capital, staff, equipment) is classified as INTERNAL — it originates from within the organization's own capacity."},
+{t:"Business Opportunities",q:"Which of the following is NOT one of the mistakes in using SWOT analysis?",o:["Focusing on just a few issues","Completing SWOT analysis on your own","Using your analysis for the next ten years","Using SWOT as an ongoing business analysis"],a:3,e:"Using SWOT as an ongoing analysis tool is a BEST PRACTICE, not a mistake. The mistakes are: focusing on few issues, doing it alone, using it for ten years without update, and relying on it exclusively."},
+{t:"Business Opportunities",q:"Which of the following is a factor to be considered in selecting a business opportunity?",o:["Business experience and skills required","Financial capability and desired income level","Owner's personal interest and risk profile","All of the above"],a:3,e:"All factors — experience, financial capability, personal interest, risk profile, legal constraints, and family support — are relevant when selecting a business opportunity."},
+{t:"Business Opportunities",q:"The following are methods of identifying business opportunity EXCEPT:",o:["Environmental scanning","Biological scanning","SWOT Analysis","Market Research"],a:1,e:"'Biological scanning' is not a method of identifying business opportunities. Environmental scanning, SWOT analysis, and market research are valid methods."},
+{t:"Business Opportunities",q:"An additive business opportunity is best described as:",o:["A completely new product in a new market","An extension of the company's business that doesn't change its fundamental character","An opportunity that complements existing business","A high-risk opportunity requiring huge investment"],a:1,e:"An additive opportunity is simply an extension (e.g., product line extension) that does not change the firm's fundamental character."},
+{t:"Business Opportunities",q:"A complementary opportunity is:",o:["An opportunity that changes the firm's fundamental character","An opportunity that complements what the entrepreneur is already doing","An extension of the product line","A high-risk new market entry"],a:1,e:"A complementary opportunity complements existing business (e.g., a textbook publisher moving into biro manufacturing)."},
+{t:"Business Opportunities",q:"Breakthrough opportunity refers to:",o:["A simple product line extension","An opportunity that complements existing activities","An extension that changes the firm's fundamental character, involving high risk","A government-funded project"],a:2,e:"Breakthrough opportunity changes the firm's fundamental character and involves high risk and huge investment in new competences."},
+{t:"Business Opportunities",q:"In _______ the entrepreneur creates opportunity from identified resources:",o:["The causation approach","The effectuation approach","The agents-partners approach","The discovery approach"],a:1,e:"In the effectuation approach, the entrepreneur uses available resources to create new opportunities. Causation identifies opportunity first, then seeks resources."},
+{t:"Business Opportunities",q:"Causation approach implies that the entrepreneur identifies a business opportunity before:",o:["Business idea","The needed resources","The end of accounting year","The start-up date"],a:1,e:"In the causation approach, opportunity is identified first, then the entrepreneur searches for the needed resources to exploit it."},
+
+// ── ENTERPRISE FORMATION & REGISTRATION ──
+{t:"Registration",q:"The following persons are prohibited by law from participating in the formation of a company — which answer is correct?",o:["A person below 18 years and a person of unsound mind","An un-discharged bankrupt and a corporate body in liquidation","Aliens in prohibited trade and persons disqualified under Section 254 of CAMA","All of the above"],a:3,e:"CAMA prohibits minors, persons of unsound mind, un-discharged bankrupts, companies in liquidation, aliens in prohibited trades, and those disqualified by courts."},
+{t:"Registration",q:"The body responsible for the registration of enterprises in Nigeria is:",o:["SON","CAC","CPU","None of the above"],a:1,e:"CAC — Corporate Affairs Commission — is the government body mandated to regulate the formation and management of companies and businesses in Nigeria."},
+{t:"Registration",q:"Corporate Affairs Commission (CAC) provides the following services EXCEPT:",o:["Payment of dividend to shareholders","Incorporation of companies","Registration of business names","Registration of incorporated trustees"],a:0,e:"CAC is a REGULATORY body — it does not pay dividends. Its core functions are incorporation, business name registration, and incorporated trustee registration."},
+{t:"Registration",q:"The name of a private company limited by shares usually ends with _____, while that of a public company ends with _____.",o:["PLC, Ltd","Ltd, PLC","Ultd, PLC","PLC, Ultd"],a:1,e:"Private limited companies end with 'Ltd'; public limited companies end with 'PLC' (e.g., Access Bank PLC, Dangote Sugar Ltd)."},
+{t:"Registration",q:"Partnerships and sole proprietorships are usually registered as:",o:["Incorporation","Business names","Incorporated trustees","Companies limited by guarantee"],a:1,e:"Sole proprietorships and partnerships are registered as 'Business Names' under Part B of CAMA at the CAC."},
+{t:"Registration",q:"The maximum number of members a private limited company is authorized to have is _____, while minimum authorized share capital is _____.",o:["50 persons, N50,000","10 persons, N50,000","50 persons, N10,000","10 persons, N10,000"],a:2,e:"A private limited company (Ltd) has a maximum of 50 shareholders and a minimum authorized share capital of N10,000 under CAMA."},
+{t:"Registration",q:"The maximum number of members of a public company is _____, and minimum authorized share capital is _____.",o:["50 persons, N50,000","Unlimited members, N500,000","Unlimited members, N50,000","Unlimited members, unlimited capital"],a:1,e:"A public company (PLC) can have UNLIMITED shareholders and requires a minimum share capital of N500,000."},
+{t:"Registration",q:"The principal law that regulates the establishment and regulation of business enterprises in Nigeria is:",o:["Standard Organisation of Nigeria (SON)","Companies and Allied Matters Act (CAMA)","SMEDAN","None of the above"],a:1,e:"CAMA — Companies and Allied Matters Act — is the primary Nigerian legislation governing the formation, management, and dissolution of companies."},
+{t:"Registration",q:"The Corporate Affairs Commission usually reserves an approved business name for:",o:["60 days","21 working days","90 days","30 days"],a:0,e:"CAC reserves an approved business name for 60 days, renewable by another 30 days."},
+{t:"Registration",q:"According to Companies and Allied Matters Act 2020, all are forms of partnership EXCEPT:",o:["International Partnership","Limited Liability Partnership","Limited Partnership","General Partnership"],a:0,e:"CAMA 2020 recognizes Limited Liability Partnership, Limited Partnership, and General Partnership. 'International Partnership' is not a recognized form."},
+{t:"Registration",q:"A company limited by guarantee is:",o:["A company with shares traded on the stock exchange","A not-for-profit company where members' liability is limited to their undertaking to contribute","A company where all members have unlimited liability","A private company with 50 members"],a:1,e:"A company limited by guarantee has no share capital and is typically not-for-profit. Members' liability is limited to what they undertake to contribute if the company is wound up."},
+{t:"Registration",q:"Which of the following is not a legal consequence of incorporating a company?",o:["It becomes a body corporate","It enjoys perpetual succession","It is given a legal identity","None of the above"],a:3,e:"All three — becoming a body corporate, enjoying perpetual succession, and gaining legal identity — ARE legal consequences of incorporation. Therefore 'none of the above' is the odd one."},
+{t:"Registration",q:"Incorporation refers to a process of incorporating a company in accordance with the provisions of:",o:["Part B of CAMA","Part C of CAMA","Part A of CAMA","Part D of CAMA"],a:2,e:"Incorporation is governed by Part A of CAMA. Part B covers business names; Part C covers incorporated trustees."},
+{t:"Registration",q:"The application for registration of a business name must be submitted within _______ days of commencement of business.",o:["7 days","14 days","28 days","60 days"],a:2,e:"Under Part B of CAMA, the application for business name registration must be submitted to the Registrar within 28 days of commencement of business."},
+{t:"Registration",q:"A sole proprietorship is an unincorporated business owned by:",o:["One person","Two persons","Three persons","Four persons"],a:0,e:"A sole proprietorship is owned and operated by a SINGLE individual with unlimited personal liability for all business debts."},
+{t:"Registration",q:"A defining feature of sole proprietorship is:",o:["At least one limited partner and one general partner","Unlimited liability and unshared responsibility","Limited responsibility","None of the above"],a:1,e:"The defining feature of sole proprietorship is UNLIMITED LIABILITY — the owner is personally liable for all debts, even to personal assets."},
+
+// ── HRM ──
+{t:"HRM",q:"The technical term 'Manpower' emerged in:",o:["1950s","1960s","1970s","1980s"],a:1,e:"'Manpower' emerged in the 1960s. Timeline: Personnel (1920s) → Manpower (1960s) → Human Resource Management (1980s-90s)."},
+{t:"HRM",q:"The term 'personnel' emerged in:",o:["1920s","1930s","1940s","1950s"],a:0,e:"'Personnel' emerged in the 1920s for administrative management of employees (payroll, hiring, record-keeping)."},
+{t:"HRM",q:"_______ is the process of matching jobs and people.",o:["Recruitment and selection","Recruitment and planning","Planning and coordinating","Organizing and programming"],a:0,e:"Recruitment and selection is the process of matching job vacancies (with their requirements) to qualified candidates."},
+{t:"HRM",q:"The traditional selection process in an organization consists of _______ steps.",o:["5","6","7","8"],a:2,e:"The 7 steps: Initial Screening Interview → Application Form → Employment Tests → Comprehensive Interview → Background Investigation → Physical Examination → Job Offer."},
+{t:"HRM",q:"The selection process for human resources usually BEGINS with:",o:["Completion of application form","Employment test","Physical examination","Initial screening interview"],a:3,e:"The INITIAL SCREENING INTERVIEW is the first step — a preliminary check before investing time in application forms and tests."},
+{t:"HRM",q:"The traditional selection process in an organization does NOT include one of the following:",o:["Initial screening interview and completion of application form","Employment tests and comprehensive interview","Background investigation and physical examination","Remuneration and compensation"],a:3,e:"Remuneration and compensation are NOT part of the selection process — they come AFTER selection in the employment contract stage."},
+{t:"HRM",q:"Job component does NOT include one of the following:",o:["Job analysis","Job description","Job implementation","Job specification"],a:2,e:"The recognized job components are: Job Analysis, Job Description, Job Specification, and Job Evaluation. 'Job Implementation' is NOT a formal component."},
+{t:"HRM",q:"Job Analysis includes:",o:["Job Description and Job Location","Job Specification and Job Hazard","Job Description and Working Condition","Job Description and Job Specification"],a:3,e:"Job Analysis encompasses Job Description (duties and responsibilities) and Job Specification (required qualifications and skills)."},
+{t:"HRM",q:"When vacancies in an organisation are filled from existing workers in that organisation, it is called:",o:["External filling","Organisational recruitment","Internal management","Internal recruitment"],a:3,e:"Internal recruitment fills vacancies from the existing pool of employees within the organization."},
+{t:"HRM",q:"_______ is the monetary compensation given to employees for work done.",o:["Renumeration","Renumemation","Remuneration","Remumeration"],a:2,e:"REMUNERATION is the correct spelling of the monetary compensation given to employees for their work."},
+{t:"HRM",q:"_______ is not a type of monetary compensation method.",o:["Time Rate Method","Piece Rate Method","Factor Method","None of the above"],a:2,e:"Factor Method is NOT a recognized monetary compensation method. Time Rate (based on hours worked) and Piece Rate (based on units produced) are recognized methods."},
+{t:"HRM",q:"A formal procedure to measure the result of an employee's work is known as:",o:["Responsibility Measurement","Quality Control","Performance Appraisal","Appraisal Measurement"],a:2,e:"Performance Appraisal is the formal procedure to evaluate and measure employee output and effectiveness."},
+{t:"HRM",q:"The measurement of an employee's output should be based on:",o:["Election","Neatness","Job responsibility","Salary"],a:2,e:"Employee output measurement should be based on JOB RESPONSIBILITY — the duties and performance expectations tied to their role."},
+{t:"HRM",q:"Abraham Maslow's Hierarchy of Need is a theory that explains:",o:["Efficiency of production process","Market equilibrium","Motivation","Staffing perspective"],a:2,e:"Maslow's Hierarchy of Need is a motivational theory explaining the five levels of human needs: physiological, safety, social, esteem, and self-actualization."},
+{t:"HRM",q:"One of the following may lead to poor employee retention:",o:["Competitive reward system","Sociable work environment","Discriminating reward system","Challenging job design"],a:2,e:"A discriminating (unfair) reward system leads to employee dissatisfaction and high turnover. Competitive, fair rewards promote retention."},
+{t:"HRM",q:"All activities undertaken by an entrepreneur towards attracting and retaining skilled employees may be referred to as:",o:["Staffing","Controlling","Organising","Human Resource Management"],a:3,e:"Human Resource Management (HRM) encompasses all activities related to attracting, developing, and retaining skilled employees."},
+{t:"HRM",q:"_______ is concerned with the management of people in a business.",o:["The Directorate","The staff Manager","The secretariat","Human Resource Management"],a:3,e:"Human Resource Management is specifically concerned with the management of people — recruitment, training, compensation, and performance."},
+{t:"HRM",q:"One of the following is crucial for successful staff management:",o:["Reward and compensation","Staff training","Staff discipline","All of the above"],a:3,e:"All three — reward/compensation, training, and discipline — are crucial components of successful staff management."},
+
+// ── TECHNOLOGY ──
+{t:"Technology",q:"_______ is the application of science or the utilization of scientific methods, means and materials in achieving commercial or industrial objectives.",o:["Laboratory science","Research science","Technology","Science"],a:2,e:"Technology is defined as the application of scientific knowledge and methods for commercial or industrial purposes — converting knowledge into practical tools and products."},
+{t:"Technology",q:"The management of technology includes the following BUT one:",o:["Scanning","Selection","Acquisition","Maintenance"],a:3,e:"The four stages of technology management are: Scanning, Selection, Acquisition, and Managing. 'Maintenance' is an operational activity, NOT one of the four stages."},
+{t:"Technology",q:"An entrepreneur can source information on technologies from which of the following?",o:["Published materials — newspapers, technical journals, existing firms","Trade fairs, exhibitions, vendors or consultants","Internet, industrial development centres","All of the above"],a:3,e:"Entrepreneurs can source technology information from all these: published materials, trade fairs, internet, universities, NOTAP, etc."},
+{t:"Technology",q:"The knowledge applied in a business, materials and machines used in production can be sources of _______ on the business:",o:["Technological influence","Environmental skill","Scientific influence","None of the above"],a:0,e:"Knowledge, materials, and machines used in production represent technological influences on the business environment."},
+
+// ── FINANCING & SME ──
+{t:"Financing",q:"SMEDAN stands for:",o:["Sales Management Enterprise Development Association of Nigeria","Small and Medium Enterprise Development Agency of Nigeria","Small Entrepreneur Development Agency of Nigeria","Seasonal Market Enterprise Development of Nigeria"],a:1,e:"SMEDAN = Small and Medium Enterprise Development Agency of Nigeria — established to promote and support SMEs."},
+{t:"Financing",q:"The venture capitalists have _______ ways to get return on investment (ROI).",o:["2","3","4","5"],a:1,e:"VCs have THREE ROI methods: (1) sell equity to another investor, (2) sell stock after IPO, (3) receive proceeds when company is sold."},
+{t:"Financing",q:"When venture capitalists want to get return on investment, they do the following EXCEPT:",o:["Sell their holdings to any other willing investor","Wait until the company goes public before selling stock","Be paid out of proceeds when the company is sold","Withdraw capital by taking the company to court"],a:3,e:"Taking a company to court is NOT a standard VC exit strategy. The proper methods are selling equity, IPO, or acquisition proceeds."},
+{t:"Financing",q:"Business angel is:",o:["A promoter","A financier","A law-enforcer","A bridge"],a:1,e:"A business angel (angel investor) is a FINANCIER — a private individual who provides early-stage capital, usually for equity in return."},
+{t:"Financing",q:"There are basically _______ traditional stages of development for an entrepreneurial venture.",o:["4","5","6","7"],a:1,e:"The 5 stages: Conception & Start-up → First Stage → Second Stage → Third Stage → Maturity & Harvest Stage."},
+{t:"Financing",q:"The stages of new venture development include ALL EXCEPT:",o:["Conception and start up","First stage and second stage","Third stage and fourth stage","Maturity stage and harvest stage"],a:2,e:"There is NO 'Fourth Stage' — the stages go from Third Stage directly to Maturity/Harvest. 'Third stage and fourth stage' is wrong."},
+{t:"Financing",q:"All types and sources of financing for new ventures can be categorized into:",o:["2","3","4","5"],a:0,e:"All financing falls into TWO categories: (1) EQUITY financing (ownership-based) and (2) DEBT financing (borrowed funds)."},
+{t:"Financing",q:"The major forms of financing sources for new ventures does NOT include one of the following:",o:["Personal resources, loans from family, friends and partners","Rotating savings scheme, trade credit, hire purchase","Borrowing from the Ministry of Finance","Finance lease, bank borrowing, debentures or equity financing"],a:2,e:"The Ministry of Finance is a government administrative body — it does NOT directly lend money to private entrepreneurs."},
+{t:"Financing",q:"The primary function of financing institutions in any economy is:",o:["To generate revenue for the government","To be an intermediary between the surplus and deficit sector","To approve budget for the government","To audit government accounts"],a:1,e:"Financial institutions are FINANCIAL INTERMEDIARIES — they collect funds from savers and channel them to borrowers/entrepreneurs."},
+{t:"Financing",q:"Under SMEEIS, banks are required to set aside what percentage of their profit before tax for investment in SMEs?",o:["10%","15%","20%","25%"],a:0,e:"Under SMEEIS, Nigerian commercial banks were mandated to set aside 10% of profit before tax for equity investment in SMEs."},
+{t:"Financing",q:"IDCC was replaced with:",o:["SON","NIPC","NEEDS","SEEDS"],a:1,e:"IDCC (Industrial Development Coordinating Committee) was replaced by NIPC — the Nigerian Investment Promotion Commission (started 1997)."},
+{t:"Financing",q:"Micro, Small and Medium-sized Enterprises can be a medium of combating:",o:["Religious crises","Political crises","Poverty","Cultural divisions"],a:2,e:"MSMEs are key tools for poverty reduction through job creation, income generation, and economic activity."},
+{t:"Financing",q:"Which of the following is a funding and development agency in Nigeria?",o:["Bank of Industry","Nigeria Investment Promotion Commission","Development Bank of Nigeria","All of the above"],a:3,e:"All three — Bank of Industry, NIPC, and Development Bank of Nigeria — are Nigerian funding and development agencies."},
+
+// ── MARKETING ──
+{t:"Marketing",q:"Which of the following is an element of the marketing mix?",o:["Product","Price","Promotion","All of the above"],a:3,e:"The marketing mix (4Ps) consists of Product, Price, Promotion, and Place — all four are elements of the marketing mix."},
+{t:"Marketing",q:"Repair of machines, legal services, hair salons, and dry cleaning are all examples of:",o:["Products","Services","Both products and services","None of the above"],a:1,e:"All listed are SERVICES — intangible offerings provided through processes/activities rather than physical goods."},
+{t:"Marketing",q:"Soap, newspapers, biro, soft drinks, and snacks are examples of:",o:["Shopping goods","Specialty goods","Convenience goods","Unsought goods"],a:2,e:"Convenience goods are low-cost, frequently purchased items bought with minimal planning (impulse/habit purchases)."},
+{t:"Marketing",q:"Furniture, bicycles, used cars, clothing, and home appliances are examples of:",o:["Shopping goods","Specialty goods","Convenience goods","Unsought goods"],a:0,e:"Shopping goods require comparison before purchase — consumers 'shop around' comparing quality, price, and suitability."},
+{t:"Marketing",q:"Custom-made products, flashy cars, photographic equipment, men's suits, and ladies' wears are examples of:",o:["Shopping goods","Specialty goods","Convenience goods","Emergency goods"],a:1,e:"Specialty goods have unique characteristics for which consumers make special purchasing effort and won't accept substitutes."},
+{t:"Marketing",q:"The lion symbol of Peugeot cars, 7-Up logo, Volkswagen symbol, or the red and yellow colours of Edo Line Transport Service are examples of:",o:["Brand mark","Product line","Brand name","None of the above"],a:0,e:"A BRAND MARK is the visual/symbolic element (logo, symbol, colors) — identifying a brand without words. A brand name uses words."},
+{t:"Marketing",q:"The original (first) registration of a trade mark is for a period of:",o:["10 years","15 years","20 years","30 years"],a:0,e:"Under Nigeria's Trade Marks Act, original trade mark registration is valid for 10 years, renewable indefinitely every 10 years."},
+{t:"Marketing",q:"The subsequent renewal of a trade mark registration is done every:",o:["10 years without limit","10 years with a limit of five consecutive times","20 years without limit","20 years with a limit of two consecutive times"],a:0,e:"Trade mark renewal is every 10 years WITHOUT any limit — a business can protect its brand indefinitely as long as it renews."},
+{t:"Marketing",q:"Original copyright is issued for a period of _______, and can be renewed ONCE for another _______ years.",o:["21, 28","20, 10","28, 21","10, 10"],a:0,e:"Nigerian copyright lasts 21 years initially, renewable ONCE for 28 more years — maximum total of 49 years."},
+{t:"Marketing",q:"_______ is the technique of setting a low initial price in order to penetrate the market quickly and win large market share.",o:["Price skimming strategy","Market penetration pricing strategy","Product mix strategy","Price policy strategy"],a:1,e:"Market penetration pricing sets a LOW initial price to quickly attract customers and gain market share — opposite of price skimming."},
+{t:"Marketing",q:"The price of a mobile phone is set at N4,999. This is an example of:",o:["Unit pricing","Odd pricing","Promotional pricing","Price flexibility"],a:1,e:"Odd pricing (psychological pricing) sets prices just below round numbers (N4,999 instead of N5,000) to appear significantly cheaper."},
+{t:"Marketing",q:"Generally, there are three export pricing strategies from which marketers can choose EXCEPT:",o:["A standard world-wide pricing","Dual pricing","Differentiating pricing","Uniform pricing"],a:3,e:"The THREE export pricing strategies are: Standard world-wide pricing, Dual pricing, and Differentiating pricing. 'Uniform pricing' is not a separate recognized category."},
+{t:"Marketing",q:"One of the following is NOT a type of distribution intensity:",o:["Intensive distribution","Random distribution","Selective distribution","Exclusive distribution"],a:1,e:"The three types are: Intensive (maximum outlets), Selective (chosen outlets), and Exclusive (single/few outlets). 'Random' is not a distribution strategy."},
+{t:"Marketing",q:"One of the following is NOT a type of conflict in channel management:",o:["Diagonal","Horizontal","Vertical","Inter-type"],a:0,e:"Channel conflicts: Horizontal (same level), Vertical (different levels), Inter-type (different outlet types). 'Diagonal' is NOT a recognized type."},
+{t:"Marketing",q:"Advertising can be any one of the following EXCEPT:",o:["Informative","Persuasive","Sales","Reminder"],a:2,e:"The three types of advertising are Informative, Persuasive, and Reminder. 'Sales' is a separate promotional activity, not a type of advertising."},
+{t:"Marketing",q:"Which of the following is NOT an advantage of sales promotion?",o:["Produces a more immediate consumer response","Allows easier measurement of results","Attracts attention and creates product awareness","Produces long-term sales increases"],a:3,e:"Sales promotion is a SHORT-TERM tool. It does NOT produce long-term sales increases — once the promotion ends, sales typically return to normal."},
+{t:"Marketing",q:"One of the following is NOT included in the three selling environments:",o:["The invisible selling","Over the counter selling","Field selling","Telemarketing"],a:0,e:"The three selling environments are: Over the Counter (OTC), Field selling, and Telemarketing. 'Invisible selling' is not a recognized category."},
+{t:"Marketing",q:"The FIRST stage in the selling process is:",o:["Demonstration","Presentation","Prospecting and qualifying","Approach"],a:2,e:"Prospecting & Qualifying is the FIRST step — identifying and qualifying potential customers before any sales activity."},
+{t:"Marketing",q:"The selling process includes ALL EXCEPT:",o:["Prospecting and qualifying","Approach and presentation","Demonstration and handling objections","Computation and calculation of profit"],a:3,e:"'Computation and calculation of profit' is a financial management activity — NOT a stage in the selling process."},
+{t:"Marketing",q:"The developmental stages which a new product goes through from introduction to decline and extermination is known as:",o:["Product maturity process","Product generation stage","Product life cycle","Product development"],a:2,e:"The Product Life Cycle (PLC) describes the trajectory: Introduction → Growth → Maturity → Decline → Extermination."},
+{t:"Marketing",q:"Which of the following is NOT a characteristic of services?",o:["Tangibility","Inseparability","Heterogeneity","Perishability and fluctuating demand"],a:0,e:"Services are INTANGIBLE (not tangible). The four service characteristics are: Intangibility, Inseparability, Heterogeneity, and Perishability."},
+{t:"Marketing",q:"There are _______ factors of production available to the entrepreneur.",o:["2","3","4","5"],a:2,e:"The four factors of production: Land, Labour, Capital, and Entrepreneurship (the organizing/risk-taking factor)."},
+{t:"Marketing",q:"Which of the following is NOT a factor of production?",o:["Land","Labour","Capital","Plan"],a:3,e:"'Plan' is a management tool, NOT a factor of production. The four factors are Land, Labour, Capital, and Entrepreneurship."},
+
+// ── ETHICS & CSR ──
+{t:"Ethics",q:"The word 'ethics' is derived from the _______ word 'ethos' which means customary behaviour, character and morals.",o:["Latin","Greek","French","German"],a:1,e:"'Ethics' comes from the ancient GREEK word 'ethos' meaning character and moral behaviour."},
+{t:"Ethics",q:"Etymologically, the word 'ethics' also comes from the _______ word 'ethicus'.",o:["Latin","Greek","French","German"],a:0,e:"While 'ethos' is Greek, 'ethicus' is the LATIN derivative — both are etymological sources of 'ethics'."},
+{t:"Ethics",q:"The following are principles of ethics EXCEPT:",o:["The good must be done","The evil must be avoided","The good must be avoided","When faced with two evils, the lesser evil should be chosen"],a:2,e:"'The good must be AVOIDED' contradicts the foundational principles of ethics. All other options are genuine ethical principles."},
+{t:"Ethics",q:"Which of the following is a category of corporate social responsibility (CSR)?",o:["Economic","Legal","Ethical","All of the above"],a:3,e:"Carroll's CSR Pyramid has four categories: Economic (profit), Legal (obey laws), Ethical (do what's right), and Discretionary/Philanthropic (voluntary)."},
+{t:"Ethics",q:"There are _______ approaches to social responsibility.",o:["5","2","3","4"],a:3,e:"The 4 approaches: Obstructionist (do as little as possible), Defensive (acknowledge but fight), Accommodative (meet minimum standards), Proactive (go beyond minimum)."},
+{t:"Ethics",q:"Owners/shareholders, employees, customers, business partners, communities, future generations, and the natural environment can be regarded as:",o:["Primary stakeholders","Secondary stakeholders","Tertiary stakeholders","All of the above"],a:0,e:"PRIMARY stakeholders have direct relationships with the organization. Secondary stakeholders (government, media) have indirect relationships."},
+{t:"Ethics",q:"The book title 'The Gospel of Wealth' was published by:",o:["Andrew Carnegie","Karl Marx","Max Weber","None of the above"],a:0,e:"Andrew Carnegie published 'The Gospel of Wealth' (1889), arguing wealthy individuals must use riches for societal benefit (Charity and Stewardship principles)."},
+{t:"Ethics",q:"Business ethics refers to:",o:["Government policy","Moral principles guiding business behavior","Business expansion strategies","Profit maximization techniques"],a:1,e:"Business ethics are the moral principles and standards that guide business behavior — determining what is right or wrong in business activities."},
+{t:"Ethics",q:"Misleading customers through incorrect product information is called:",o:["Product diversification","False advertising","Market penetration","Branding"],a:1,e:"False advertising involves promoting products with misleading or incorrect information — an unethical and often illegal practice."},
+{t:"Ethics",q:"Corporate social responsibility refers to:",o:["Maximizing profits only","Business obligation to contribute positively to society","Government taxation","Business competition"],a:1,e:"CSR is the obligation of businesses to consider and contribute positively to the impact of their activities on society and the environment."},
+
+// ── CONTRACT LAW & TAXATION ──
+{t:"Contract",q:"For there to be a valid contract, all of these must be present EXCEPT:",o:["Consideration","Intention to create social relations","Offer","Acceptance"],a:1,e:"The required elements for a valid contract are: Offer, Acceptance, Consideration, Legal Capacity, and Intention to create LEGAL (not social) relations."},
+{t:"Contract",q:"An offer cannot be terminated in one of the following ways:",o:["Revocation and rejection","Lapse of time or death of the offeror","Failure of condition","Consideration and acceptance"],a:3,e:"Consideration and acceptance FORM a contract — they don't terminate an offer. Offers terminate through revocation, rejection, lapse of time, death, or failure of condition."},
+{t:"Contract",q:"Contract ultra vires means:",o:["Expansion","Illegal","Legal","Valid"],a:1,e:"'Ultra vires' (Latin: beyond the powers) refers to contracts or actions exceeding authorized power — making them ILLEGAL/VOID."},
+{t:"Contract",q:"An order of a court which requires a person to REFRAIN from doing an act is known as:",o:["Obligation","Injunction","Summon","Appeal"],a:1,e:"An INJUNCTION is a court order restraining a party from performing a specified act (prohibitory injunction)."},
+{t:"Contract",q:"Tax _______ is a criminal offence.",o:["Avoidance","Evasion","Non-compliance","Falsification"],a:1,e:"TAX EVASION is ILLEGAL — deliberate non-payment through fraud. TAX AVOIDANCE is LEGAL — using legitimate means to minimize tax liability."},
+{t:"Contract",q:"Value Added Tax (VAT) was introduced in Nigeria in:",o:["1992","1994","1979","1999"],a:1,e:"VAT was officially introduced in Nigeria in 1994, replacing the Sales Tax. It is currently charged at 7.5%."},
+{t:"Contract",q:"Which of the following is NOT a type of direct tax?",o:["Personal Income Tax","Company Income Tax","Value Added Tax (VAT)","Capital Gains Tax"],a:2,e:"VAT is an INDIRECT tax collected by businesses and passed to consumers. Direct taxes (PIT, CIT, CGT) are levied directly on income or wealth."},
+{t:"Contract",q:"The article of partnership does NOT include one of the following:",o:["Names of partners","Nature of business to be conducted","Capital contribution of each partner","Marital status of each partner"],a:3,e:"The MARITAL STATUS of partners is irrelevant to the business arrangement and is NOT included in the Articles of Partnership."},
+{t:"Contract",q:"Which of these is a remedy for breach of contract?",o:["Damages","Specific performance","Injunction","All of the above"],a:3,e:"The three remedies for breach of contract are: Damages (monetary compensation), Specific Performance (court order to fulfill), and Injunction (restraining order)."},
+{t:"Contract",q:"Consideration in contract law is:",o:["The goodwill between parties","The price which a party pays to enjoy the offer made by the other","A formal written agreement","The intention to create legal relations"],a:1,e:"Consideration is the price paid by the offeree to enjoy the offer. Without consideration (except for deeds), a contract is gratuitous and not binding."},
+
+// ── BUSINESS FORMS & GENERAL ──
+{t:"Business Forms",q:"_______ is the standard document that tells us how well a business is performing and where it stands in financial terms.",o:["Receipt","Accounting statement","Financial statement","Income statement"],a:2,e:"A FINANCIAL STATEMENT is the comprehensive document showing a business's financial performance, including Income Statement, Balance Sheet, and Cash Flow Statement."},
+{t:"Business Forms",q:"The following are forms of financial statements EXCEPT:",o:["Statement of cash flow","Balance sheet","Income statement","Cash expenditure"],a:3,e:"'Cash expenditure' is not a financial statement — it's a line item. The three main financial statements are Cash Flow, Balance Sheet, and Income Statement."},
+{t:"Business Forms",q:"The location of a business is _______, while the site of a business is _______.",o:["Site, location","Location, site","Site, environment","Area, region"],a:1,e:"LOCATION is the general geographic area; SITE is the specific piece of land on which the business stands."},
+{t:"Business Forms",q:"How many types of family business model do you know?",o:["3","5","7","2"],a:0,e:"There are 3 types of family business models: the three-cycle model, the developmental model, and the balance point model."},
+{t:"Business Forms",q:"Which of these is not a type of family business model?",o:["The business square model","The three-cycle model","The developmental model","The balance point model"],a:0,e:"The 'business square model' does not exist. The valid models are: three-cycle model, developmental model, and balance point model."},
+{t:"Business Forms",q:"Longenecker et al. (2000) present _______ succession mode:",o:["Seven-stage","Two-stage","Four-stage","Three-stage"],a:0,e:"Longenecker et al. (2000) presented a SEVEN-STAGE succession model for family business succession."},
+{t:"Business Forms",q:"_______ is a business environment.",o:["International environment","State environment","Money environment","None of the above"],a:0,e:"The international environment is one of the recognized business environments that can affect entrepreneurial activities."},
+{t:"Business Forms",q:"Human relationships impacting on a business can be referred to as:",o:["Political factors","People influences","Economic factors","Socio-cultural factors"],a:3,e:"Human relationships and their impact on business are classified as SOCIO-CULTURAL factors in the business environment."},
+{t:"Business Forms",q:"Which of the following best describes the acronym SMEDAN?",o:["Small and Medium Enterprises Directorate Agent of Nigeria","Small and Medium Establishment Directory Agency of Nigeria","Small and Medium Enterprises Development Agency of Nigeria","Small and Medium Enterprises Development Agencies of Nigeria"],a:2,e:"SMEDAN = Small and Medium Enterprises Development Agency of Nigeria."},
+{t:"Business Forms",q:"Which of these is not a mandate of SMEDAN?",o:["Coordinating Micro, Small and Medium-sized Enterprises","Funding assistance for Micro, Small and Medium-sized Enterprises","Running the business on behalf of Micro, Small and Medium-sized Enterprises","Developing and implementing favourable policies for MSMEs"],a:2,e:"SMEDAN does NOT run businesses on behalf of MSMEs. It coordinates, funds, and develops policies to support MSMEs."},
+
+// ── NIGERIAN AGENCIES ──
+{t:"Nigerian Agencies",q:"NITDA is an acronym for:",o:["Nigeria Information Technology Development Agency","Nigeria Information and Technical Development Agency","National Information and Technical Development Agency","National Information Technology Development Agency"],a:3,e:"NITDA = National Information Technology Development Agency — the clearing house for all IT projects and infrastructural development in Nigeria."},
+{t:"Nigerian Agencies",q:"_______ is the clearing house for all IT projects and infrastructural development in Nigeria:",o:["SMEDAN","Federal Ministry of Communication","Federal Ministry of Information Technology","NITDA"],a:3,e:"NITDA (National Information Technology Development Agency) serves as the clearing house for all IT projects and infrastructure in Nigeria."},
+{t:"Nigerian Agencies",q:"NITDA is an agency under:",o:["Federal Ministry of Communication","Federal Ministry of Information and Communication Technology","Federal Ministry of Information and Digital Economy","Federal Ministry of Communications and Digital Economy"],a:3,e:"NITDA operates under the Federal Ministry of Communications and Digital Economy."},
+{t:"Nigerian Agencies",q:"One of these agencies has the mandate to promote the development and diversification of export trade in Nigeria:",o:["Nigeria Trade Council","National Export Promotion Council","Nigerian Export Promotion Commission","Nigerian Export Promotion Council"],a:3,e:"The Nigerian Export Promotion Council (NEPC) has the mandate to promote and diversify Nigeria's export trade."},
+{t:"Nigerian Agencies",q:"The board of the agency in charge of export trade in Nigeria consists of the:",o:["Chairman and seven members","Chairman and six members","Chairman and five members","Chairman and ten members"],a:3,e:"The board of the Nigerian Export Promotion Council consists of the Chairman and ten members."},
+{t:"Nigerian Agencies",q:"_______ is the agency responsible for the assessment, collection and accounting for tax and other revenues accruing to the Federal Government of Nigeria:",o:["Federal Tax and Revenue Commission","Nigeria Internal Revenue Service","Federal Internal Revenue Board","Federal Inland Revenue Service"],a:3,e:"FIRS — Federal Inland Revenue Service — is responsible for tax assessment, collection, and accounting for federal government revenues."},
+{t:"Nigerian Agencies",q:"CAC stands for:",o:["Companies Affairs Commission","Corporate Affair Commission","Corporate Agency Code","Corporate Affairs Commission"],a:3,e:"CAC = Corporate Affairs Commission — Nigeria's body for business registration and regulation."},
+{t:"Nigerian Agencies",q:"The authority responsible for the policy implementation of Small and Medium Scale Enterprises in Nigeria is:",o:["The Ministry of Trade and Industry","The Ministry of Commerce and Industry","The Ministry of Finance and Industry","The Ministry of Finance and Foreign Affairs"],a:1,e:"SME policy implementation falls under the MINISTRY OF COMMERCE AND INDUSTRY at the federal level."},
+{t:"Nigerian Agencies",q:"_______ can be described as an important driver of the Nigerian economy, considering its roles.",o:["The health sector","Research and Development","SMEDAN","Industry"],a:2,e:"SMEDAN is considered an important driver of the Nigerian economy through its support and development of Small and Medium Enterprises."},
+{t:"Nigerian Agencies",q:"The Bank of Industry primarily provides:",o:["Tax collection","Industrial loans","Police services","Import licenses"],a:1,e:"BOI — Bank of Industry — provides long-term loans for industrial development and financing of small and medium enterprises."},
+{t:"Nigerian Agencies",q:"The National Directorate of Employment focuses on:",o:["Military training","Job creation and skill development","Taxation","Foreign trade"],a:1,e:"NDE focuses on reducing unemployment through vocational training, small business training, and youth empowerment programs."},
+{t:"Nigerian Agencies",q:"Which institution regulates monetary policy in Nigeria?",o:["BOI","CBN","SMEDAN","NDE"],a:1,e:"CBN — Central Bank of Nigeria — regulates monetary policy and also provides financial intervention programs for entrepreneurship."},
+{t:"Nigerian Agencies",q:"The agency responsible for business registration in Nigeria is:",o:["BOI","SMEDAN","CAC","NDE"],a:2,e:"CAC (Corporate Affairs Commission) is responsible for registering businesses and companies in Nigeria."},
+{t:"Nigerian Agencies",q:"Entrepreneurs must register their businesses with:",o:["NDE","CAC","SMEDAN","BOI"],a:1,e:"All business enterprises in Nigeria must register with the CAC (Corporate Affairs Commission) to operate legally."},
+
+// ── ADDITIONAL CONCEPTS FROM SUMMARY ──
+{t:"Basic Concepts",q:"Innovative entrepreneurs are characterized by:",o:["Being very cautious and skeptical about adopting new ideas","Copying or adapting existing successful innovations","Introducing new ideas, products, technologies, or production methods","Refusing to adopt new innovations even when changes are necessary"],a:2,e:"Innovative entrepreneurs introduce NEW ideas, products, technologies, or production methods — they drive technological and economic progress."},
+{t:"Basic Concepts",q:"Imitative (Adoptive) entrepreneurs are characterized by:",o:["Introducing completely new ideas","Refusing to adopt any new ideas","Copying or adapting existing successful innovations","Being proactive leaders in their industry"],a:2,e:"Imitative entrepreneurs adopt and adapt existing innovations introduced by others — common in developing economies where original innovation may be limited."},
+{t:"Basic Concepts",q:"Fabian entrepreneurs are characterized by:",o:["Rapid adoption of innovation","Cautious adoption of change only when unavoidable","Complete rejection of innovation","Aggressive market entry"],a:1,e:"Fabian entrepreneurs are VERY CAUTIOUS — they resist change and only adopt innovation when it becomes absolutely unavoidable."},
+{t:"Basic Concepts",q:"Drone entrepreneurs are characterized by:",o:["Being highly innovative","Adopting changes quickly","Refusing to adopt innovation even when changes are necessary","Being socially responsible"],a:2,e:"Drone entrepreneurs REFUSE to adopt innovation completely, continuing to use old production methods even in competitive environments."},
+{t:"Financing",q:"A business can grow through market penetration, which involves:",o:["Introducing new products to new markets","Selling existing products in new markets","Increasing sales of existing products in existing markets","Combining with another company"],a:2,e:"Market penetration = increasing sales of EXISTING products in EXISTING markets through advertising, promotion, or price reductions."},
+{t:"Financing",q:"Market development as a growth strategy involves:",o:["Introducing new products to existing markets","Selling existing products in NEW markets","Increasing sales of existing products in current markets","Creating completely new product categories"],a:1,e:"Market development = selling EXISTING products in NEW markets (e.g., expanding to new cities or exporting to other countries)."},
+{t:"Financing",q:"Product development as a growth strategy involves:",o:["Introducing NEW products to EXISTING markets","Selling existing products in new markets","Increasing sales in existing markets","Entering completely new industries"],a:0,e:"Product development = introducing NEW products to EXISTING markets (e.g., a beverage company launching new flavors for its current customers)."},
+{t:"Financing",q:"Diversification as a growth strategy involves:",o:["Increasing sales of existing products","Selling existing products in new markets","Introducing new products to existing markets","Introducing NEW products to NEW markets"],a:3,e:"Diversification = NEW products into NEW markets — the riskiest growth strategy but one that can create significant new opportunities."},
+{t:"Financing",q:"Franchising as a growth strategy allows entrepreneurs to expand by:",o:["Merging with competitors","Licensing their brand name and business model to others","Selling the entire business","Taking loans from banks"],a:1,e:"Franchising allows the franchisor to expand by licensing their brand name and business model to franchisees who operate under their system."},
+{t:"Feasibility",q:"A business plan is a written document that describes:",o:["A government policy for businesses","A business idea, the objectives of the business, and strategies for achieving those objectives","A marketing survey","The curriculum vitae of the entrepreneur"],a:1,e:"A business plan is a written document describing the business idea, its objectives, and the strategies to achieve those objectives."},
+{t:"Feasibility",q:"The section of a business plan that provides a brief overview of the entire plan is called:",o:["Market analysis","Financial plan","Executive summary","Organizational structure"],a:2,e:"The EXECUTIVE SUMMARY provides a brief overview of the entire business plan — it is typically written LAST but placed FIRST."},
+{t:"Feasibility",q:"The section describing management roles and responsibilities in a business plan is:",o:["Financial plan","Market analysis","Organizational structure","Executive summary"],a:2,e:"The Organizational Structure section describes management structure, roles, responsibilities, and ownership structure."},
+{t:"Feasibility",q:"Startup costs are usually included in the:",o:["Marketing plan","Business description","Financial plan","Executive summary"],a:2,e:"Startup costs are part of the FINANCIAL PLAN, which outlines startup costs, revenue projections, profit forecasts, and cash flow estimates."},
+{t:"Business Opportunities",q:"Silicon Valley is known primarily for:",o:["Agricultural innovation","Mining activities","Technological entrepreneurship","Military industries"],a:2,e:"Silicon Valley became the global center for technological entrepreneurship and innovation, producing influential tech entrepreneurs like Steve Jobs."},
+{t:"Basic Concepts",q:"Entrepreneurship contributes to balanced regional development by:",o:["Limiting business activities","Establishing businesses in different regions","Increasing imports","Reducing industries"],a:1,e:"Entrepreneurs who establish businesses in various regions help reduce economic imbalance between urban and rural areas."},
+{t:"Basic Concepts",q:"The desire to be one's own boss reflects which entrepreneurial motivation?",o:["Achievement motivation","Independence motivation","Social motivation","Financial motivation"],a:1,e:"The desire for independence (being one's own boss, making own decisions) is a key pull factor motivating individuals toward entrepreneurship."},
+{t:"Basic Concepts",q:"Achievement motivation in entrepreneurship refers to:",o:["Avoiding competition","Desire to accomplish challenging goals and achieve success","Government support","Market protection"],a:1,e:"Achievement-motivated entrepreneurs are driven by the desire for personal accomplishment, success, and solving challenging problems."},
+{t:"Business Opportunities",q:"Mrs. Abiola relocated from Benin City to Lagos following the transfer of her husband. On getting to Lagos, she started her small-scale business. This is a:",o:["Push factor","Pull factor","Relocation factor","None of the above"],a:0,e:"A PUSH factor 'pushes' someone into entrepreneurship involuntarily — Mrs. Abiola started her business due to relocation, not because she sought an opportunity."},
+{t:"Business Opportunities",q:"Which of the following is NOT a factor that motivates an individual to become an entrepreneur?",o:["Loss of job or job dissatisfaction and need for autonomy","Unfavourable treatment from superior and lack of incentives","Lack of advancement in current employment, marriage separation or spouse relocation","None of the above"],a:3,e:"ALL three options ARE legitimate motivating factors. Therefore 'none of the above' is the correct answer — nothing should be excluded."},
+{t:"Business Opportunities",q:"Which of the following is NOT important to an entrepreneur?",o:["Knowing his goals for the venture and employing the best people","Being an honest person","Having a survivor strategy","Embarking on complex vision"],a:3,e:"Entrepreneurs need CLEAR, ACHIEVABLE visions — not complex ones. Complex visions cause confusion and misaligned goals."},
+{t:"Ethics",q:"Environmental pollution by businesses is considered:",o:["Ethical practice","Social responsibility","Unethical behavior","Marketing strategy"],a:2,e:"Environmental pollution is an UNETHICAL business practice — businesses have a social responsibility to manage waste and reduce pollution."},
+{t:"Ethics",q:"Providing safe products to customers is:",o:["Social responsibility","Diversification","Cost reduction","Market development"],a:0,e:"Providing safe products is a core element of a business's SOCIAL RESPONSIBILITY to its customers."},
+{t:"Ethics",q:"Which of the following improves business reputation?",o:["Corruption","Ethical behavior","Deception","Product misrepresentation"],a:1,e:"Ethical behavior builds trust, enhances reputation, encourages customer loyalty, and prevents legal problems."},
+{t:"Ethics",q:"Bribery in business is an example of:",o:["Ethical behavior","Innovation","Corruption","Customer satisfaction"],a:2,e:"Bribery is an example of CORRUPTION — an unethical business practice that can lead to legal penalties and reputational damage."},
+{t:"Nigerian Agencies",q:"The Government entrepreneurship policy refers to:",o:["Private business ownership","Government strategies to promote entrepreneurship","Individual profit maximization","Business competition"],a:1,e:"Government entrepreneurship policy includes laws, programs, and strategies implemented by government to encourage business creation and support SMEs."},
+{t:"Nigerian Agencies",q:"One major challenge of government entrepreneurship programs is:",o:["High innovation","Easy access to loans","Bureaucracy","Rapid development"],a:2,e:"Bureaucracy — complex procedures and red tape — is a major challenge that discourages entrepreneurs from accessing government programs."},
+{t:"Business Forms",q:"Which of the following best explains the concept of 'economic development' in a developing society?",o:["Reduction of industries","Improvement in economic and social welfare of citizens","Reduction of trade","Increase in government spending only"],a:1,e:"Economic development refers to improvement in the economic, social, and living standards of a country's citizens."},
+{t:"Business Forms",q:"Small and Medium Enterprises (SMEs) are important because they:",o:["Increase imports","Reduce employment","Promote local economic development","Eliminate innovation"],a:2,e:"SMEs create jobs, stimulate local economic activity, and are considered the backbone of many economies — especially in developing countries."},
+{t:"Basic Concepts",q:"The concept of entrepreneurship has traditionally been described within the confines of:",o:["Political theory","Economic theory","Social theory","Cultural theory"],a:1,e:"The concept of entrepreneurship has traditionally been described within economic theory, with researchers establishing a positive correlation between entrepreneurship and economic development."},
+{t:"Basic Concepts",q:"The Global Entrepreneurship Monitor (GEM) 2016/2017 report found that _______ reports the most positive attitude towards entrepreneurship:",o:["Europe","Asia","Africa","North America"],a:2,e:"The GEM 2016/2017 report found that AFRICA reports the most positive attitude toward entrepreneurship, with three-quarters of working-age adults viewing it as a good career choice."},
+{t:"Business Forms",q:"Hirschman's theory of 'unbalanced growth' holds that underdevelopment is caused by:",o:["Too much industrialization","A lack of entrepreneurial abilities","Excess population","Political instability"],a:1,e:"Hirschman's theory of unbalanced growth holds that underdevelopment is caused by a LACK OF ENTREPRENEURIAL ABILITIES."},
+{t:"Registration",q:"A company can only be legally formed if at least _______ persons are involved:",o:["One","Two","Three","Five"],a:1,e:"Under CAMA, a company requires at least TWO subscribers/persons to be formed (a minimum of two shareholders to incorporate a private company)."},
+{t:"Feasibility",q:"Real estate feasibility provides answers to questions like:",o:["What equipment is needed?","What kind of land or property will be required?","Who are the competitors?","What is the production cost?"],a:1,e:"Real estate feasibility answers questions about the type of land/property needed, market conditions, and how the business will impact the area."},
+{t:"Feasibility",q:"Comprehensive feasibility takes a look at:",o:["Only financial aspects","Only market aspects","Various aspects including marketing, real estate, cultural, and financial","Only technical aspects"],a:2,e:"Comprehensive feasibility is the most common type for new business ventures — it examines all aspects: marketing, real estate, cultural, financial, technical, etc."},
+{t:"Contract",q:"Under the Labour Act, entrepreneurs who employ _______ workers and above are required to comply with the National Minimum Wage Act:",o:["10","20","50","100"],a:2,e:"Under the Labour Act, entrepreneurs employing 50 or more workers must comply with the National Minimum Wage Act 2000."},
+{t:"Contract",q:"The contributory pension scheme under the Pension Reform Act 2014 requires employers to contribute at least _______ of employees' monthly emoluments:",o:["5%","8%","10%","15%"],a:2,e:"Under the Pension Reform Act 2014, employers must contribute a minimum of 10% and employees 8% of monthly emoluments to the pension scheme."},
+{t:"Contract",q:"Under Section 9(3) of the Labour Act, the minimum working age for children and young persons in Nigeria is:",o:["12 years","14 years","16 years","18 years"],a:2,e:"Section 9(3) of the Labour Act sets the minimum working age at 16 years. No person below 16 can be employed except as an apprentice."},
+{t:"Business Opportunities",q:"A spin-off is best described as:",o:["A new company formed from scratch by an individual","Business opportunities generated by researchers during research within existing organizations","A franchise agreement","A merger between two companies"],a:1,e:"Spin-offs are business opportunities generated by researchers during their research within an already existing business or non-business related organizations."},
+{t:"Business Opportunities",q:"Venture or business angels are:",o:["Government-funded investors","Affluent individuals who inject capital for startup in exchange for ownership equity or convertible debt","Bank officials who approve loans","Marketing professionals"],a:1,e:"Business angels are wealthy private individuals who invest personal capital in startups in exchange for equity or convertible debt."},
+{t:"Business Opportunities",q:"In SWOT analysis, strengths and weaknesses are:",o:["External factors","Internal factors","Both internal and external","Neither internal nor external"],a:1,e:"In SWOT: Strengths and Weaknesses are INTERNAL factors (within the organization); Opportunities and Threats are EXTERNAL factors."},
+{t:"Business Opportunities",q:"The primary purpose of a SWOT analysis is to:",o:["Determine the business's tax liability","Discover what you do well and how you can improve","Register the business","Prepare the financial statements"],a:1,e:"The purpose of SWOT analysis is to discover what you do well as an entrepreneur and how you can improve on your strengths while addressing weaknesses."},
+{t:"Feasibility",q:"Cultural feasibility is concerned with:",o:["The financial costs of production","Investigation of all environmental factors involved to successfully carry out a project","Market size and competition","Technical equipment requirements"],a:1,e:"Cultural feasibility concerns the investigation of all environmental/cultural factors involved in successfully carrying out a project."},
+{t:"Feasibility",q:"Operational feasibility measures:",o:["The financial viability of a project","How well a company will be able to solve problems and take advantage of opportunities during the project","The technical equipment needed","The market size"],a:1,e:"Operational feasibility measures how well a company can solve problems and exploit opportunities during the course of the project."},
+{t:"Basic Concepts",q:"Social entrepreneurship focuses primarily on:",o:["Maximizing shareholder profit","Government development plans","Solving social problems through business innovation","Agricultural development"],a:2,e:"Social entrepreneurs create businesses that address social challenges (poverty, education, healthcare) while also maintaining financial sustainability."},
+{t:"Basic Concepts",q:"Muhammad Yunus is known for:",o:["Oil exploration","Automobile manufacturing","Microfinance initiatives","Industrial robotics"],a:2,e:"Muhammad Yunus pioneered MICROFINANCE — providing small loans to low-income individuals to start small businesses and improve livelihoods."},
+{t:"Basic Concepts",q:"The Medici family became famous for their role as:",o:["Military leaders","Farmers","Bankers and patrons of the arts","Government officials"],a:2,e:"The Medici family were powerful Renaissance-era bankers who supported both economic development and cultural/artistic growth."},
+{t:"Basic Concepts",q:"Guilds during the Middle Ages were associations that:",o:["Promoted government authority","Regulated trades and supported craftsmen","Stopped foreign trade","Encouraged industrialization"],a:1,e:"Guilds were associations of craftsmen and traders that regulated trades, protected members, encouraged cooperation, and facilitated resource sharing."},
+{t:"Basic Concepts",q:"The Phoenicians were known for advancing:",o:["Agricultural systems","Banking regulations","Maritime trade routes","Industrial manufacturing"],a:2,e:"The Phoenicians (around 1500 BC) advanced trade through maritime routes, standardized weights, and development of credit systems."},
+{t:"Basic Concepts",q:"Mesopotamia is historically referred to as:",o:["The Land of Kings","The Cradle of Civilization","The First Capitalist Society","The Home of Industrialization"],a:1,e:"Mesopotamia is widely recognized as the 'Cradle of Civilization' with early entrepreneurial activities including trade, record-keeping, and long-distance trading networks."},
+{t:"Basic Concepts",q:"The Industrial Revolution introduced which major innovation to entrepreneurship?",o:["Agricultural reforms","Technological innovations and factory systems","Religious movements","Government control"],a:1,e:"The Industrial Revolution introduced mechanized production and factory systems, transforming business operations and enabling mass production."},
+{t:"Basic Concepts",q:"Richard Arkwright is associated with:",o:["Banking systems","Textile manufacturing innovations","Automobile production","Ship building"],a:1,e:"Richard Arkwright pioneered innovations that improved textile manufacturing and helped establish the factory system during the Industrial Revolution."},
+{t:"Basic Concepts",q:"James Watt is known for improving the:",o:["Spinning wheel","Electric generator","Steam engine","Printing press"],a:2,e:"James Watt's improved steam engine powered industrial machinery and transportation, becoming a cornerstone of the Industrial Revolution."},
+{t:"Business Forms",q:"Which of the following always leads to business growth?",o:["Increased number of staff","Effective and efficient staff promotion","Higher research cost than profit","Employees and customers' satisfaction"],a:3,e:"Employee and customer satisfaction leads to repeat business, loyalty, and referrals — all of which drive business growth."},
+];
+
+// ══════════════════════════════════════════
+//  APP STATE
+// ══════════════════════════════════════════
+let cfg = { numQ: 20, timer: 15, topic: 'all' };
+let session = {
+  questions: [], current: 0, answers: [],
+  startTime: 0, questionStart: 0,
+  timerInterval: null, timeLeft: 0,
+  totalTime: 0, timeouts: 0
+};
+
+// ══════════════════════════════════════════
+//  STORAGE
+// ══════════════════════════════════════════
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem('ent211_history') || '[]'); } catch { return []; }
+}
+function saveHistory(h) {
+  localStorage.setItem('ent211_history', JSON.stringify(h));
+}
+function addSession(data) {
+  const h = loadHistory();
+  h.unshift({ ...data, date: new Date().toISOString() });
+  if (h.length > 50) h.pop();
+  saveHistory(h);
+}
+
+// ══════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function pct(n, d) { return d ? Math.round((n / d) * 100) : 0; }
+function fmtTime(s) {
+  if (s < 60) return `${s}s`;
+  return `${Math.floor(s / 60)}m ${s % 60}s`;
+}
+function scoreColor(p) {
+  if (p >= 80) return 'great';
+  if (p >= 60) return 'ok';
+  return 'bad';
+}
+
+// ══════════════════════════════════════════
+//  SCREEN NAVIGATION
+// ══════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'home') updateHomeStats();
+  if (id === 'history') renderHistory();
+}
+
+function updateHomeStats() {
+  const h = loadHistory();
+  document.getElementById('totalSessions').textContent = h.length;
+  if (h.length) {
+    const best = Math.max(...h.map(s => s.pct));
+    const avg = Math.round(h.reduce((a, s) => a + s.pct, 0) / h.length);
+    document.getElementById('bestScore').textContent = best + '%';
+    document.getElementById('avgAcc').textContent = avg + '%';
+  }
+}
+
+// ══════════════════════════════════════════
+//  CONFIG
+// ══════════════════════════════════════════
+let selectedTimer = 15;
+function selectTimer(t) {
+  selectedTimer = t;
+  document.querySelectorAll('.chip[data-t]').forEach(c => {
+    c.classList.toggle('active', parseInt(c.dataset.t) === t);
+  });
+}
+
+// ══════════════════════════════════════════
+//  START QUIZ
+// ══════════════════════════════════════════
+function startQuiz() {
+  const n = parseInt(document.getElementById('numQ').value) || 20;
+  const topic = document.getElementById('topicFilter').value;
+  cfg = { numQ: Math.min(n, 330), timer: selectedTimer, topic };
+
+  let pool = topic === 'all' ? QB : QB.filter(q => q.t === topic);
+  if (pool.length === 0) pool = QB;
+
+  session.questions = shuffle(pool).slice(0, Math.min(cfg.numQ, pool.length));
+  session.current = 0;
+  session.answers = [];
+  session.startTime = Date.now();
+  session.totalTime = 0;
+  session.timeouts = 0;
+
+  showScreen('quiz');
+  renderQuestion();
+}
+
+// ══════════════════════════════════════════
+//  QUIZ ENGINE
+// ══════════════════════════════════════════
+function renderQuestion() {
+  const q = session.questions[session.current];
+  const total = session.questions.length;
+  const idx = session.current;
+
+  document.getElementById('qCounter').textContent = `Q ${idx + 1} / ${total}`;
+  document.getElementById('qProgressBar').style.width = `${(idx / total) * 100}%`;
+  document.getElementById('topicBadge').textContent = q.t;
+  document.getElementById('qText').textContent = q.q;
+  document.getElementById('feedbackBox').innerHTML = '';
+  document.getElementById('nextBtn').style.display = 'none';
+
+  // Options
+  const opts = q.o;
+  const container = document.getElementById('optionsContainer');
+  container.innerHTML = '';
+  opts.forEach((opt, i) => {
+    const div = document.createElement('div');
+    div.className = 'option';
+    div.innerHTML = `<span class="opt-letter">${String.fromCharCode(65 + i)}.</span> ${opt}`;
+    div.onclick = () => selectAnswer(i);
+    container.appendChild(div);
+  });
+
+  session.questionStart = Date.now();
+  startTimer();
+}
+
+function startTimer() {
+  clearTimer();
+  const t = cfg.timer;
+  if (t === 0) {
+    document.getElementById('timerNum').textContent = '∞';
+    document.getElementById('timerCircle').style.stroke = '#58a6ff';
+    document.getElementById('timerCircle').style.strokeDashoffset = '0';
+    return;
+  }
+  session.timeLeft = t;
+  updateTimerUI(t, t);
+  session.timerInterval = setInterval(() => {
+    session.timeLeft--;
+    updateTimerUI(session.timeLeft, t);
+    if (session.timeLeft <= 0) {
+      clearTimer();
+      timeoutQuestion();
+    }
+  }, 1000);
+}
+
+function updateTimerUI(left, total) {
+  const num = document.getElementById('timerNum');
+  const circle = document.getElementById('timerCircle');
+  num.textContent = left;
+  const pctLeft = left / total;
+  const dash = 138.2;
+  circle.style.strokeDashoffset = dash * (1 - pctLeft);
+  circle.style.stroke = pctLeft > 0.5 ? '#58a6ff' : pctLeft > 0.25 ? '#d29922' : '#f85149';
+  if (left <= 5) num.classList.add('pulse'); else num.classList.remove('pulse');
+}
+
+function clearTimer() {
+  clearInterval(session.timerInterval);
+  session.timerInterval = null;
+}
+
+function timeoutQuestion() {
+  const q = session.questions[session.current];
+  const elapsed = Math.round((Date.now() - session.questionStart) / 1000);
+  session.totalTime += elapsed;
+  session.timeouts++;
+  session.answers.push({ qi: session.current, chosen: -1, correct: q.a, time: elapsed, timeout: true });
+
+  disableOptions();
+  highlightAnswer(q.a, -1);
+  showFeedback('timeout', q.a, q.o, q.e);
+  document.getElementById('nextBtn').style.display = 'inline-block';
+}
+
+function selectAnswer(chosen) {
+  if (document.querySelectorAll('.option.disabled').length) return;
+  clearTimer();
+  const q = session.questions[session.current];
+  const elapsed = Math.round((Date.now() - session.questionStart) / 1000);
+  session.totalTime += elapsed;
+  const correct = chosen === q.a;
+  session.answers.push({ qi: session.current, chosen, correct: q.a, time: elapsed, timeout: false, isCorrect: correct });
+
+  disableOptions();
+  highlightAnswer(q.a, chosen);
+  showFeedback(correct ? 'correct' : 'wrong', q.a, q.o, q.e);
+  document.getElementById('nextBtn').style.display = 'inline-block';
+}
+
+function disableOptions() {
+  document.querySelectorAll('.option').forEach(o => o.classList.add('disabled'));
+}
+
+function highlightAnswer(correct, chosen) {
+  const opts = document.querySelectorAll('.option');
+  opts[correct].classList.add('correct');
+  if (chosen >= 0 && chosen !== correct) {
+    opts[chosen].classList.add('wrong');
+  }
+}
+
+function showFeedback(type, correctIdx, opts, explanation) {
+  const q = session.questions[session.current];
+  const fb = document.getElementById('feedbackBox');
+  let cls, icon, titleCls, title;
+  if (type === 'correct') { cls = 'correct-fb'; icon = '✅'; titleCls = 'c'; title = 'Correct!'; }
+  else if (type === 'wrong') { cls = 'wrong-fb'; icon = '❌'; titleCls = 'w'; title = 'Incorrect'; }
+  else { cls = 'timeout-fb'; icon = '⏰'; titleCls = 't'; title = 'Time\'s Up!'; }
+
+  fb.innerHTML = `<div class="feedback-box ${cls}">
+    <div class="fb-title ${titleCls}">${icon} ${title}</div>
+    ${type !== 'correct' ? `<div style="font-size:0.85rem;margin-bottom:6px">Correct answer: <strong>${String.fromCharCode(65 + correctIdx)}. ${opts[correctIdx]}</strong></div>` : ''}
+    <div style="font-size:0.85rem;color:var(--text2)"><strong>📚 Explanation:</strong> ${explanation}</div>
+    <div style="font-size:0.75rem;color:var(--text2);margin-top:6px"><em>Topic: ${q.t}</em></div>
+  </div>`;
+}
+
+function nextQuestion() {
+  session.current++;
+  if (session.current >= session.questions.length) {
+    finishQuiz();
+  } else {
+    renderQuestion();
+  }
+}
+
+// ══════════════════════════════════════════
+//  FINISH QUIZ
+// ══════════════════════════════════════════
+function finishQuiz() {
+  clearTimer();
+  const answers = session.answers;
+  const total = session.questions.length;
+  const correct = answers.filter(a => a.isCorrect).length;
+  const wrong = answers.filter(a => !a.isCorrect && !a.timeout).length;
+  const timeouts = session.timeouts;
+  const totalTime = session.totalTime;
+  const p = pct(correct, total);
+
+  // Save session
+  const topicStats = {};
+  session.questions.forEach((q, i) => {
+    const t = q.t;
+    if (!topicStats[t]) topicStats[t] = { total: 0, correct: 0 };
+    topicStats[t].total++;
+    if (answers[i]?.isCorrect) topicStats[t].correct++;
+  });
+
+  addSession({ pct: p, correct, total, totalTime, timeouts, topicStats });
+
+  // Render results
+  const scoreBig = document.getElementById('scoreBig');
+  scoreBig.textContent = p + '%';
+  scoreBig.className = `score-big ${scoreColor(p)}`;
+
+  const messages = { great: '🎉 Outstanding! Keep it up!', ok: '👍 Good effort! Review weak areas.', bad: '📖 Keep studying — you\'ve got this!' };
+  document.getElementById('scoreLabel').textContent = messages[scoreColor(p)];
+  document.getElementById('metaCorrect').textContent = correct;
+  document.getElementById('metaWrong').textContent = wrong;
+  document.getElementById('metaTime').textContent = fmtTime(totalTime);
+  document.getElementById('metaTimeout').textContent = timeouts;
+
+  // Topic breakdown
+  const topicDiv = document.getElementById('topicBreakdown');
+  topicDiv.innerHTML = '';
+  const sorted = Object.entries(topicStats).sort((a, b) => pct(a[1].correct, a[1].total) - pct(b[1].correct, b[1].total));
+  sorted.forEach(([topic, stats]) => {
+    const p2 = pct(stats.correct, stats.total);
+    const color = p2 >= 70 ? 'var(--green)' : p2 >= 50 ? 'var(--yellow)' : 'var(--red)';
+    topicDiv.innerHTML += `<div class="topic-row">
+      <div class="topic-name">${topic}</div>
+      <div class="topic-bar-wrap"><div class="topic-bar" style="width:${p2}%;background:${color}"></div></div>
+      <div class="topic-pct">${p2}%</div>
+      ${p2 < 70 ? '<span class="weak-tag">⚠ Weak</span>' : ''}
+    </div>`;
+  });
+
+  // Weak topics
+  const weak = sorted.filter(([, s]) => pct(s.correct, s.total) < 70);
+  if (weak.length) {
+    document.getElementById('weakSection').style.display = 'block';
+    const wl = document.getElementById('weakList');
+    wl.innerHTML = '';
+    weak.forEach(([topic, stats], i) => {
+      const p2 = pct(stats.correct, stats.total);
+      const urgency = p2 < 50 ? 'reco-num' : 'reco-num ok';
+      wl.innerHTML += `<div class="reco-item">
+        <div class="${urgency}">${i + 1}</div>
+        <div><strong>${topic}</strong> — ${p2}% accuracy (${stats.correct}/${stats.total} correct)<br>
+        <span style="font-size:0.8rem;color:var(--text2)">📖 Re-read the ${topic} section of your notes</span></div>
+      </div>`;
+    });
+  } else {
+    document.getElementById('weakSection').style.display = 'none';
+  }
+
+  // Review
+  const reviewDiv = document.getElementById('reviewList');
+  reviewDiv.innerHTML = '';
+  session.questions.forEach((q, i) => {
+    const ans = answers[i];
+    const wasCorrect = ans?.isCorrect;
+    const wasTimeout = ans?.timeout;
+    const chosenIdx = ans?.chosen;
+    reviewDiv.innerHTML += `<div class="review-item">
+      <div class="review-q">Q${i + 1}. ${q.q}</div>
+      <div class="review-line">Your answer: <span class="${wasCorrect ? 'cr' : 'wr'}">${wasTimeout ? '⏰ Timed Out' : chosenIdx >= 0 ? `${String.fromCharCode(65 + chosenIdx)}. ${q.o[chosenIdx]}` : '—'}</span></div>
+      <div class="review-line">Correct answer: <span class="cr">${String.fromCharCode(65 + q.a)}. ${q.o[q.a]}</span></div>
+      <div class="review-expl">💡 ${q.e}</div>
+    </div>`;
+  });
+
+  showScreen('results');
+}
+
+// ══════════════════════════════════════════
+//  HISTORY
+// ══════════════════════════════════════════
+function renderHistory() {
+  const h = loadHistory();
+  const histList = document.getElementById('histList');
+  if (!h.length) {
+    histList.innerHTML = '<p style="color:var(--text2);text-align:center">No sessions yet. Start a quiz!</p>';
+    document.getElementById('trendChart').innerHTML = '';
+    return;
+  }
+
+  // Trend chart
+  const chart = document.getElementById('trendChart');
+  chart.innerHTML = '';
+  const recent = h.slice(0, 20).reverse();
+  recent.forEach((s, i) => {
+    const h2 = Math.max(4, Math.round(s.pct));
+    const color = s.pct >= 80 ? 'var(--green)' : s.pct >= 60 ? 'var(--yellow)' : 'var(--red)';
+    chart.innerHTML += `<div class="bar-wrap">
+      <div class="bar-col" style="height:${h2}px;background:${color}" title="${s.pct}%"></div>
+      <div class="bar-label">${s.pct}%</div>
+    </div>`;
+  });
+
+  histList.innerHTML = '';
+  h.forEach((s, i) => {
+    const date = new Date(s.date);
+    const color = scoreColor(s.pct);
+    const clr = color === 'great' ? 'var(--green)' : color === 'ok' ? 'var(--yellow)' : 'var(--red)';
+    histList.innerHTML += `<div class="hist-item">
+      <div class="hist-score" style="color:${clr}">${s.pct}%</div>
+      <div class="hist-meta">
+        <div class="ht">${s.correct}/${s.total} correct — ${fmtTime(s.totalTime)}</div>
+        <div class="hd">${date.toLocaleDateString()} ${date.toLocaleTimeString()}</div>
+      </div>
+    </div>`;
+  });
+}
+
+function clearHistory() {
+  if (confirm('Clear all session history?')) {
+    localStorage.removeItem('ent211_history');
+    renderHistory();
+    updateHomeStats();
+  }
+}
+
+// ══════════════════════════════════════════
+//  PDF EXPORT
+// ══════════════════════════════════════════
+function exportPDF() {
+  const answers = session.answers;
+  const total = session.questions.length;
+  const correct = answers.filter(a => a.isCorrect).length;
+  const p = pct(correct, total);
+
+  // Build topic stats
+  const topicStats = {};
+  session.questions.forEach((q, i) => {
+    const t = q.t;
+    if (!topicStats[t]) topicStats[t] = { total: 0, correct: 0 };
+    topicStats[t].total++;
+    if (answers[i]?.isCorrect) topicStats[t].correct++;
+  });
+
+  const weak = Object.entries(topicStats)
+    .filter(([, s]) => pct(s.correct, s.total) < 70)
+    .sort((a, b) => pct(a[1].correct, a[1].total) - pct(b[1].correct, b[1].total));
+
+  let html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>ENT211 Study Report</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 30px; color: #222; font-size: 13px; }
+    h1 { color: #1a56db; border-bottom: 2px solid #1a56db; padding-bottom: 8px; }
+    h2 { color: #333; margin-top: 24px; border-left: 4px solid #1a56db; padding-left: 10px; }
+    .score { font-size: 3rem; font-weight: 900; color: ${p >= 80 ? 'green' : p >= 60 ? 'orange' : 'red'}; }
+    table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background: #f0f4ff; }
+    .weak { color: red; font-weight: bold; }
+    .ok { color: green; }
+    .q-item { background: #f9f9f9; border-radius: 6px; padding: 10px; margin: 8px 0; page-break-inside: avoid; }
+    .correct { color: green; }
+    .wrong { color: red; }
+    .expl { color: #555; font-style: italic; border-top: 1px solid #eee; margin-top: 6px; padding-top: 6px; }
+  </style></head><body>
+  <h1>📚 ENT211 / CED300 — Study Report</h1>
+  <p>Generated: ${new Date().toLocaleString()} | University of Benin</p>
+
+  <h2>📊 Score Summary</h2>
+  <div class="score">${p}%</div>
+  <table>
+    <tr><th>Metric</th><th>Value</th></tr>
+    <tr><td>Total Questions</td><td>${total}</td></tr>
+    <tr><td>Correct Answers</td><td class="ok">${correct}</td></tr>
+    <tr><td>Wrong Answers</td><td class="wrong">${answers.filter(a => !a.isCorrect && !a.timeout).length}</td></tr>
+    <tr><td>Timeouts</td><td>${session.timeouts}</td></tr>
+    <tr><td>Total Time</td><td>${fmtTime(session.totalTime)}</td></tr>
+  </table>
+
+  <h2>📈 Topic Accuracy</h2>
+  <table>
+    <tr><th>Topic</th><th>Correct</th><th>Total</th><th>Accuracy</th><th>Status</th></tr>
+    ${Object.entries(topicStats).sort((a, b) => pct(a[1].correct, a[1].total) - pct(b[1].correct, b[1].total)).map(([t, s]) => {
+      const p2 = pct(s.correct, s.total);
+      return `<tr><td>${t}</td><td>${s.correct}</td><td>${s.total}</td><td>${p2}%</td><td class="${p2 < 70 ? 'weak' : 'ok'}">${p2 < 70 ? '⚠ Weak' : '✅ Good'}</td></tr>`;
+    }).join('')}
+  </table>
+
+  ${weak.length ? `<h2>⚠️ Weak Topics — Study Recommendations</h2>
+  <table>
+    <tr><th>Priority</th><th>Topic</th><th>Accuracy</th><th>Recommendation</th></tr>
+    ${weak.map(([t, s], i) => `<tr><td>${i + 1}</td><td>${t}</td><td class="weak">${pct(s.correct, s.total)}%</td><td>Re-read ${t} section urgently</td></tr>`).join('')}
+  </table>` : '<h2>✅ No Weak Topics — Excellent Performance!</h2>'}
+
+  <h2>📝 Full Question Review</h2>
+  ${session.questions.map((q, i) => {
+    const ans = answers[i];
+    const wasCorrect = ans?.isCorrect;
+    const wasTimeout = ans?.timeout;
+    const chosenIdx = ans?.chosen;
+    return `<div class="q-item">
+      <strong>Q${i + 1} [${q.t}]:</strong> ${q.q}<br>
+      <span class="${wasCorrect ? 'correct' : 'wrong'}">Your answer: ${wasTimeout ? '⏰ Timed Out' : chosenIdx >= 0 ? `${String.fromCharCode(65 + chosenIdx)}. ${q.o[chosenIdx]}` : '—'}</span><br>
+      <span class="correct">Correct answer: ${String.fromCharCode(65 + q.a)}. ${q.o[q.a]}</span>
+      <div class="expl">💡 ${q.e}</div>
+    </div>`;
+  }).join('')}
+
+  <p style="text-align:center;color:#999;margin-top:30px;font-size:11px">ENT211 / CED300 Quiz App — University of Benin | Good Luck in Your Exams!</p>
+  <p style="text-align:center;font-size:12px;margin-top:8px;color:#222"><strong>Vibe Coded by Ace</strong></p>
+  </body></html>`;
+
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ENT211_Study_Report_${new Date().toISOString().slice(0,10)}.html`;
+  a.click();
+  URL.revokeObjectURL(url);
+  alert('📄 Report downloaded! Open the .html file in your browser, then use Ctrl+P → Save as PDF to create your PDF report.');
+}
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+document.getElementById('totalQ').textContent = QB.length;
+updateHomeStats();
+</script>
+</body>
+</html>

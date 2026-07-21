@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEN201 – Introduction to Software Engineering</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0e13;
+    --surface: #13161f;
+    --surface2: #1a1e2b;
+    --border: #252a38;
+    --accent: #4fffb0;
+    --accent2: #ff6b6b;
+    --accent3: #ffd166;
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --correct: #4fffb0;
+    --wrong: #ff6b6b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0 0 60px;
+  }
+
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 28px 24px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(1.1rem, 3vw, 1.4rem);
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -0.02em;
+  }
+
+  header p {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .score-badge {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    text-align: right;
+    min-width: 110px;
+  }
+
+  .score-badge .score-val {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--accent);
+  }
+
+  .score-badge .score-label {
+    font-size: 0.65rem;
+    color: var(--muted);
+  }
+
+  .progress-bar {
+    margin-top: 14px;
+    height: 3px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 99px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+
+  .progress-text {
+    font-size: 0.65rem;
+    color: var(--muted);
+    margin-top: 5px;
+  }
+
+  main {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 28px 16px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  .question-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .question-card.answered-correct { border-color: var(--correct); }
+  .question-card.answered-wrong { border-color: var(--wrong); }
+
+  .question-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .q-number {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--muted);
+    background: var(--surface2);
+    border-radius: 6px;
+    padding: 3px 9px;
+    white-space: nowrap;
+    margin-top: 2px;
+  }
+
+  .q-text {
+    font-size: 0.875rem;
+    line-height: 1.65;
+    color: var(--text);
+  }
+
+  .options-list {
+    padding: 14px 20px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .option-btn {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 11px 14px;
+    cursor: pointer;
+    text-align: left;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+    width: 100%;
+  }
+
+  .option-btn:hover:not(:disabled) {
+    border-color: var(--accent);
+    background: #1e2535;
+    transform: translateX(2px);
+  }
+
+  .option-btn:disabled { cursor: default; }
+
+  .option-btn.correct {
+    border-color: var(--correct);
+    background: rgba(79,255,176,0.07);
+    color: var(--correct);
+  }
+
+  .option-btn.wrong {
+    border-color: var(--wrong);
+    background: rgba(255,107,107,0.07);
+    color: var(--wrong);
+  }
+
+  .option-btn.reveal {
+    border-color: rgba(79,255,176,0.4);
+    background: rgba(79,255,176,0.04);
+    color: rgba(79,255,176,0.7);
+  }
+
+  .opt-letter {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.7rem;
+    color: var(--muted);
+    min-width: 20px;
+    margin-top: 1px;
+  }
+
+  .option-btn.correct .opt-letter,
+  .option-btn.reveal .opt-letter { color: var(--correct); }
+  .option-btn.wrong .opt-letter { color: var(--wrong); }
+
+  .explanation {
+    margin: 0 20px 18px;
+    background: var(--surface2);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 12px 14px;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    color: #b8fce0;
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .explanation.show { display: block; }
+
+  .explanation strong {
+    color: var(--accent);
+    font-weight: 500;
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.72rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .result-banner {
+    margin: 0 20px 18px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    display: none;
+    animation: fadeIn 0.25s ease;
+  }
+
+  .result-banner.correct-banner {
+    background: rgba(79,255,176,0.1);
+    color: var(--correct);
+    border: 1px solid rgba(79,255,176,0.25);
+  }
+
+  .result-banner.wrong-banner {
+    background: rgba(255,107,107,0.1);
+    color: var(--wrong);
+    border: 1px solid rgba(255,107,107,0.25);
+  }
+
+  .result-banner.show { display: flex; gap: 8px; align-items: center; }
+
+  .footer-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 10px 20px;
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+  }
+
+  .reset-btn {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 8px;
+    padding: 8px 20px;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  .reset-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  .final-score {
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    border-radius: 14px;
+    padding: 28px;
+    text-align: center;
+    display: none;
+  }
+
+  .final-score.show { display: block; animation: fadeIn 0.4s ease; }
+
+  .final-score h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--accent);
+  }
+
+  .final-score p { color: var(--muted); font-size: 0.8rem; margin-top: 8px; }
+
+  .grade-tag {
+    display: inline-block;
+    margin-top: 14px;
+    padding: 6px 18px;
+    border-radius: 99px;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div>
+      <h1>SEN201 — Software Engineering</h1>
+      <p>UNIBEN · 2024/2025 · Option C · 40 Questions</p>
+    </div>
+    <div class="score-badge">
+      <div class="score-val" id="scoreDisplay">0/0</div>
+      <div class="score-label">correct</div>
+    </div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="progress-text" id="progressText">0 of 40 answered</div>
+</header>
+
+<main id="quizMain"></main>
+
+<div class="footer-bar">
+  <button class="reset-btn" onclick="resetQuiz()">↺ Reset Quiz</button>
+</div>
+
+<script>
+const questions = [
+  {
+    q: "What does the multiplicity 1..* in an association imply?",
+    opts: ["Exactly one instance","Zero or one instance","One or more instances","A fixed number of instances, like 5","Zero or more instances"],
+    ans: 2,
+    exp: "1..* means 'one or more' — the lower bound is 1 (at least one must exist) and the upper bound is * (unbounded). This differs from 0..* (zero or more) or exactly 1."
+  },
+  {
+    q: "Aggregation is a special form of association that represents ___.",
+    opts: ["A strong ownership and lifecycle dependency","A whole-part relationship where the part can exist independently of the whole","An inheritance hierarchy","The sequence of interactions between objects","The states an object can be in"],
+    ans: 1,
+    exp: "Aggregation models a whole-part ('has-a') relationship, but the part can exist independently. For example, a Department aggregates Employees — the employees still exist even if the department is dissolved. This distinguishes it from Composition."
+  },
+  {
+    q: "How is Composition different from Aggregation?",
+    opts: ["Composition is weaker than aggregation","In composition, the part's lifecycle is independent of the whole","Composition implies a stronger ownership where the part's lifecycle is dependent on the whole","Composition is used only for database modeling","There is no difference; the terms are synonymous"],
+    ans: 2,
+    exp: "Composition is a stronger form of aggregation. The part cannot exist without the whole — if the whole is destroyed, so are its parts. Example: a House is composed of Rooms; destroy the house and the rooms cease to exist."
+  },
+  {
+    q: "Which relationship is represented by a diamond symbol in a Class Diagram?",
+    opts: ["Inheritance (Generalization)","Association","Dependency","Aggregation or Composition","Realization"],
+    ans: 3,
+    exp: "In UML Class Diagrams, a diamond symbol denotes Aggregation (hollow diamond) or Composition (filled/solid diamond). Both represent whole-part relationships, with Composition being the stronger form."
+  },
+  {
+    q: "The main advantage of using inheritance is:",
+    opts: ["It increases the number of objects","It allows for easy modification and implementation reuse","It maintains strict encapsulation","It simplifies object creation at runtime","It models dynamic relationships"],
+    ans: 1,
+    exp: "Inheritance promotes code reuse — a subclass inherits attributes and methods from its superclass, so common behavior is defined once and reused. It also enables easy modification since changes to the superclass propagate to subclasses."
+  },
+  {
+    q: "A Sequence Diagram is primarily used to show ___.",
+    opts: ["The static classes in the system","The flow of activities across different swim lanes","The interaction between objects in chronological order","The states of an object over its lifetime","The physical deployment of software components"],
+    ans: 2,
+    exp: "Sequence Diagrams show how objects interact with each other over time, with messages arranged in chronological (top-to-bottom) order. They are part of the Behavioral View in UML and focus on the sequence of method calls."
+  },
+  {
+    q: "In a Sequence Diagram, what does a vertical dashed line represent?",
+    opts: ["A message between objects","The lifeline of an object","The activation period of an object","A conditional branch","The system boundary"],
+    ans: 1,
+    exp: "A vertical dashed line in a Sequence Diagram is the lifeline of an object. It represents the object's existence over time. Activation boxes (rectangles) on the lifeline represent the period when the object is active/executing."
+  },
+  {
+    q: "What is the key difference between a Sequence Diagram and a Collaboration Diagram?",
+    opts: ["Sequence Diagrams show structure, while Collaboration Diagrams show behavior","Collaboration Diagrams show the sequence of messages using numbers, while Sequence Diagrams use vertical ordering","Sequence Diagrams are obsolete and have been replaced by Collaboration Diagrams","Collaboration Diagrams cannot show object creation","There is no difference; they are identical"],
+    ans: 1,
+    exp: "Both show object interactions, but differently. Sequence Diagrams use vertical (top-to-bottom) ordering to show time. Collaboration (Communication) Diagrams show the same interactions but use numbered messages on a graph/network layout without explicit time axis."
+  },
+  {
+    q: "An Activity Diagram is similar to a flowchart but different because it supports ___.",
+    opts: ["The definition of classes and attributes","The modeling of parallel activities and synchronization","The showing of message sequences between objects","The depiction of inheritance hierarchies","The specification of operation signatures"],
+    ans: 1,
+    exp: "Activity Diagrams extend flowcharts by supporting parallel (concurrent) flows using fork and join bars (synchronization bars). This makes them ideal for modeling business processes and workflows with concurrent activities."
+  },
+  {
+    q: "In an Activity Diagram, what do 'swim lanes' help to illustrate?",
+    opts: ["The sequence of activities","The conditions for transitions","The grouping of activities based on who performs them","The final state of the process","The objects involved in the activities"],
+    ans: 2,
+    exp: "Swim lanes (partitions) divide the Activity Diagram into columns or rows, each assigned to a particular actor or organizational unit. This makes it clear who is responsible for each activity in the workflow."
+  },
+  {
+    q: "A State Chart Diagram is most useful for modeling:",
+    opts: ["The interactions between multiple objects in a use case","The flow of activities in a business process","How the state of a single object changes in response to events over its lifetime","The static class structure","The physical nodes where software is deployed"],
+    ans: 2,
+    exp: "State Chart Diagrams (Statechart/State Machine Diagrams) model the dynamic behavior of a single object — showing all the states it can be in and how it transitions between states in response to events."
+  },
+  {
+    q: "In a State Chart Diagram, what is a 'transition'?",
+    opts: ["A state that the object can be in","The initial starting point of the object","A change from one state to another triggered by an event","The final state of the object","An activity performed within a state"],
+    ans: 2,
+    exp: "A transition is a directed arrow from one state to another, triggered by an event. It may also include a guard condition and an action: event[guard]/action. If the event occurs and the guard is true, the action executes and the object moves to the new state."
+  },
+  {
+    q: "The notation event[guard]/action on a transition in a State Chart Diagram means ___.",
+    opts: ["The action is performed before the event is checked","The transition occurs if the event happens, regardless of the guard condition","The transition occurs if the event happens and the guard condition is true, and then the action is performed","The guard condition is evaluated only after the action is performed","The action defines a new state for the object"],
+    ans: 2,
+    exp: "The full notation is: event[guard]/action. The transition fires only when the event occurs AND the guard condition evaluates to true. The action then executes as part of the transition. All three parts are optional but follow this specific order."
+  },
+  {
+    q: "According to the document, the Classical Waterfall Model is considered 'idealistic'. What is its major shortcoming?",
+    opts: ["It is too expensive to implement","It requires highly skilled project managers","It assumes that each phase can be completed perfectly with no errors, which is impractical","It does not allow for any customer interaction","It is only suitable for small projects"],
+    ans: 2,
+    exp: "The Waterfall Model's fatal flaw is its rigid, sequential assumption: each phase must be completed perfectly before the next begins, with no going back. In reality, errors are discovered late (often during testing), making fixes extremely costly."
+  },
+  {
+    q: "What is the main purpose of developing a prototype in software development?",
+    opts: ["To serve as the final, deployable version of the software","To identify and clarify user requirements through iterative feedback","To replace the need for an SRS document","To perform extensive load testing","To train end-users before the actual system is built"],
+    ans: 1,
+    exp: "Prototyping's primary goal is requirements elicitation and validation. By showing users a working model early, developers can get concrete feedback, identify misunderstood requirements, and refine the system before full development begins."
+  },
+  {
+    q: "The Spiral Model is called a 'meta-model' because it ___.",
+    opts: ["Is the simplest model to understand and use","Is only used for prototyping user interfaces","Encompasses all other life cycle models and includes risk handling","Focuses exclusively on coding and testing","Is used only for object-oriented development projects"],
+    ans: 2,
+    exp: "The Spiral Model is a meta-model because each spiral loop can use any other SDLC model (Waterfall, Prototyping, etc.) depending on the project phase and identified risks. Its defining feature is explicit risk analysis at each iteration."
+  },
+  {
+    q: "The Evolutionary Model is also known as the ___.",
+    opts: ["Waterfall Model","Spiral Model","Successive Versions or Incremental Model","Prototype Model","Agile Model"],
+    ans: 2,
+    exp: "The Evolutionary (Incremental) Model delivers the system in increments. Each increment is a working version that adds functionality. It's called 'Successive Versions' because each release builds upon the previous, evolving toward the complete system."
+  },
+  {
+    q: "Which life cycle model is most suitable for projects where requirements are not well understood?",
+    opts: ["Classical Waterfall Model","Iterative Waterfall Model","Prototyping Model","Evolutionary Model","Spiral Model"],
+    ans: 3,
+    exp: "The Evolutionary (Incremental) Model handles poorly understood requirements best — the system evolves through iterations. However, Prototyping is also a strong answer since prototypes are specifically built to clarify vague requirements. The Evolutionary Model is marked correct per the paper."
+  },
+  {
+    q: "In the example of documenting the 'withdraw cash' function from an ATM, the amount to be withdrawn must be:",
+    opts: ["Any positive number","An integer value greater than 100 and less than 10,000 in multiples of 100","A value less than 100","A decimal value for precision","Entered as a string"],
+    ans: 1,
+    exp: "This is a classic SRS constraint example. The withdraw amount must be: an integer (no decimals), greater than 100, less than 10,000, AND a multiple of 100 (i.e., 200, 500, 1000). This illustrates how functional requirements must be precise and testable."
+  },
+  {
+    q: "The concept of 'Conceptual Integrity' in an SRS document means that the document should be ___.",
+    opts: ["As long as possible","Easy to understand and consistent","Focused on implementation details","Written for developers only","Verified only at the end of the project"],
+    ans: 1,
+    exp: "Conceptual Integrity in an SRS means the document is coherent, consistent, and easy to understand. It should present requirements in a unified way without contradictions, making it clear to all stakeholders — not just developers."
+  },
+  {
+    q: "In the context of UML, what is a model?",
+    opts: ["A fully functional version of the software","A simplified representation of a system, focusing on important aspects","The final user documentation","The project plan and schedule","The source code repository"],
+    ans: 1,
+    exp: "A UML model is an abstraction — a simplified view of the system that focuses on important characteristics while ignoring irrelevant details. Different UML diagrams represent different aspects (structural, behavioral) of the same underlying model."
+  },
+  {
+    q: "What does UML stand for?",
+    opts: ["Universal Modeling Logic","Unified Module Language","Unified Modeling Language","Universal Module Linker","Unified Method Library"],
+    ans: 2,
+    exp: "UML stands for Unified Modeling Language. It is a standardized, general-purpose visual modeling language used in software engineering to visualize, specify, construct, and document the artifacts of a software system."
+  },
+  {
+    q: "Which of the following is a key reason for creating models in software engineering?",
+    opts: ["To replace the need for coding","To eliminate the need for testing","To manage complexity and facilitate communication","To automatically generate user manuals","To calculate the project's return on investment"],
+    ans: 2,
+    exp: "Models serve two primary purposes: managing complexity (by providing abstractions at the right level of detail) and facilitating communication (providing a common visual language between developers, stakeholders, and clients)."
+  },
+  {
+    q: "Which UML view represents the system's functionality as seen by external users?",
+    opts: ["Functional View","Behavioral View","Implementation View","Environmental View","User's View"],
+    ans: 0,
+    exp: "The Use Case View (also called Functional View or User's View) captures what the system does from the perspective of external users (actors). It is the central view in UML's 4+1 architecture and drives all other views."
+  },
+  {
+    q: "The Use Case Diagram is part of which UML view?",
+    opts: ["Structural View","Behavioral View","User's View","Implementation View","Environmental View"],
+    ans: 2,
+    exp: "Use Case Diagrams belong to the User's View (Use Case View / Functional View). They model what the system must do from an external actor's perspective, capturing functional requirements without specifying how they are implemented."
+  },
+  {
+    q: "In a Use Case Diagram, an actor represents:",
+    opts: ["A specific person who will use the system","A role played by a user with respect to the system","An internal class within the system","A database table","A specific scenario of system use"],
+    ans: 1,
+    exp: "An actor represents a role, not a specific individual. The same person might play multiple roles (e.g., a bank customer could be both a 'Depositor' and a 'Borrower'). Actors can also be other systems or hardware that interact with the system."
+  },
+  {
+    q: "What is the purpose of the <<include>> relationship between use cases?",
+    opts: ["To show optional behavior under certain conditions","To factor out common behavior that is used multiple times","To indicate that one use case is a special case of another","To represent the system boundary","To model the inheritance relationship between actors"],
+    ans: 1,
+    exp: "<<include>> is used when a use case always incorporates the behavior of another use case. It factors out common, mandatory sub-behavior shared by multiple use cases (e.g., 'Login' included in both 'Withdraw Cash' and 'Check Balance')."
+  },
+  {
+    q: "What does the <<extend>> relationship in a Use Case Diagram signify?",
+    opts: ["Compulsory and automatic inclusion of one use case in another","That an actor can participate in multiple use cases","Optional behavior that is triggered under specific conditions","The hierarchical decomposition of a complex use case","The sequence of steps within a use case"],
+    ans: 2,
+    exp: "<<extend>> models optional or conditional extensions. The extending use case adds behavior to the base use case only under specific conditions (at an extension point). Unlike <<include>>, the base use case is complete without the extension."
+  },
+  {
+    q: "Which UML diagram describes the static structure of a system in terms of classes and their relationships?",
+    opts: ["Use Case Diagram","Sequence Diagram","Class Diagram","Activity Diagram","State Chart Diagram"],
+    ans: 2,
+    exp: "The Class Diagram is the primary structural diagram in UML. It shows classes, their attributes, operations, and the relationships between them (association, aggregation, composition, inheritance, dependency). It is the backbone of the Implementation View."
+  },
+  {
+    q: "In a Class Diagram, what does an association between two classes represent?",
+    opts: ["An inheritance relationship","A communication path or connection between instances of the classes","That one class is a part of another class","The flow of activities from one class to another","The sequence of messages exchanged"],
+    ans: 1,
+    exp: "An association in a Class Diagram represents a structural link between instances (objects) of the associated classes — they can communicate or reference each other. It is shown as a solid line and is the most general relationship type."
+  },
+  {
+    q: "What is the primary purpose of the Requirements Analysis and Specification phase?",
+    opts: ["Writing the source code for the software","Understanding, defining, and documenting what a software system should do","Testing the final software product for bugs","Designing the user interface of the system","Deploying the software to the end users"],
+    ans: 1,
+    exp: "The Requirements Analysis & Specification phase aims to: (1) Elicit and understand all requirements from stakeholders, (2) Analyze and resolve conflicts/ambiguities, and (3) Document them formally in an SRS (Software Requirements Specification) document."
+  },
+  {
+    q: "___ are considered stakeholders in a software project?",
+    opts: ["Only the programmers and testers","The users and clients","Individuals or groups with an interest in or affected by the software system","The project managers and business analysts","Only the regulatory bodies"],
+    ans: 2,
+    exp: "Stakeholders include anyone with a vested interest in or affected by the system: end users, clients/customers, project managers, developers, testers, regulatory bodies, and even competitors in some contexts."
+  },
+  {
+    q: "What is the main difference between functional and non-functional requirements?",
+    opts: ["Functional requirements are about cost, while non-functional are about time","Functional requirements are optional, while non-functional are mandatory","Functional requirements specify what the system should do, while non-functional specify how well it should do it","Functional requirements are technical, while non-functional are business-oriented","There is no significant difference"],
+    ans: 2,
+    exp: "Functional requirements define WHAT the system does (specific behaviors, functions, features). Non-functional requirements define HOW WELL it does it — quality attributes like performance, security, reliability, usability, and scalability."
+  },
+  {
+    q: "What document serves as a formal record of the analyzed requirements?",
+    opts: ["Project Charter","Test Case Document","Requirements Specification Document (RSD) or Software Requirements Specification (SRS)","User Manual","Design Blueprint"],
+    ans: 2,
+    exp: "The SRS (Software Requirements Specification) or RSD is the formal document produced at the end of the requirements phase. It contains all functional and non-functional requirements and serves as a contract between stakeholders and the development team."
+  },
+  {
+    q: "The professional who acts as a bridge between business users and technical teams is called a ___.",
+    opts: ["Software Tester","Project Manager","Systems Analyst","Database Administrator","UX Designer"],
+    ans: 2,
+    exp: "A Systems Analyst bridges the gap between business stakeholders and technical developers. They elicit requirements from users, analyze business processes, and translate business needs into technical specifications that developers can implement."
+  },
+  {
+    q: "Which of the following is a key property of a good SRS document?",
+    opts: ["It should specify how to implement the system","It should be verbose to cover all details","It should have a 'black-box' view, specifying what the system does, not how","It should be written in technical jargon only developers understand","It should avoid documenting non-functional requirements"],
+    ans: 2,
+    exp: "A good SRS maintains a 'black-box' perspective — it specifies WHAT the system must do (its inputs, outputs, and behavior) without prescribing HOW it should be implemented. Implementation decisions belong in the Design Document, not the SRS."
+  },
+  {
+    q: "What is a major problem an organization might face without an SRS document?",
+    opts: ["The software would be developed too quickly","The system may not be implemented according to customer needs","Developers would have more creative freedom","The project budget would be significantly reduced","Testing would become easier"],
+    ans: 1,
+    exp: "Without an SRS, there is no formal record of what was agreed upon. Developers may build the wrong system, misunderstand requirements, or make contradictory design decisions — all leading to a product that doesn't meet customer needs."
+  },
+  {
+    q: "Which of the following is an example of a functional requirement?",
+    opts: ["The system shall be available 99.9% of the time","The system shall load the homepage within 2 seconds","The system shall allow users to reset their password","All user data shall be encrypted","The system shall be compatible with Chrome and Firefox"],
+    ans: 2,
+    exp: "Functional requirements describe specific actions/behaviors the system must perform. 'Allow users to reset their password' is a specific system function. Options (a) = availability (non-functional), (b) = performance (non-functional), (d) = security (non-functional), (e) = compatibility (non-functional)."
+  },
+  {
+    q: "Which of the following is an example of a non-functional requirement?",
+    opts: ["The system shall generate monthly sales reports","The system shall calculate employee taxes","The system shall authenticate users via a login screen","The system shall support up to 10,000 concurrent users","The system shall allow administrators to delete user accounts"],
+    ans: 3,
+    exp: "Supporting up to 10,000 concurrent users is a capacity/scalability requirement — a non-functional quality attribute. It defines HOW WELL the system performs rather than WHAT it does. The other options are specific system behaviors (functional requirements)."
+  },
+  {
+    q: "The 'Goals of Implementation' section in an SRS does NOT typically include:",
+    opts: ["Ensuring quality and reliability","Adhering to budget and schedule","Specifying the programming language to be used","Facilitating maintenance and scalability","Ensuring data security and privacy"],
+    ans: 2,
+    exp: "The 'Goals of Implementation' section covers high-level quality goals (reliability, maintainability, security, budget, schedule). Specifying the actual programming language is an implementation/design decision — too specific and prescriptive for an SRS goals section."
+  }
+];
+
+let answered = 0;
+let correct = 0;
+
+function renderQuiz() {
+  const main = document.getElementById('quizMain');
+  main.innerHTML = '';
+  answered = 0;
+  correct = 0;
+  updateScore();
+
+  questions.forEach((q, i) => {
+    const card = document.createElement('div');
+    card.className = 'question-card';
+    card.id = `card-${i}`;
+
+    const letters = ['a','b','c','d','e'];
+    const optionsHTML = q.opts.map((opt, j) => `
+      <button class="option-btn" onclick="selectAnswer(${i}, ${j})" id="opt-${i}-${j}">
+        <span class="opt-letter">${letters[j]})</span>
+        <span>${opt}</span>
+      </button>
+    `).join('');
+
+    card.innerHTML = `
+      <div class="question-header">
+        <span class="q-number">Q${i+1}</span>
+        <span class="q-text">${q.q}</span>
+      </div>
+      <div class="options-list">${optionsHTML}</div>
+      <div class="result-banner" id="result-${i}"></div>
+      <div class="explanation" id="exp-${i}">
+        <strong>✦ Explanation</strong>
+        ${q.exp}
+      </div>
+    `;
+
+    main.appendChild(card);
+  });
+}
+
+function selectAnswer(qIdx, optIdx) {
+  const q = questions[qIdx];
+  const card = document.getElementById(`card-${qIdx}`);
+  const btns = card.querySelectorAll('.option-btn');
+  const resultBanner = document.getElementById(`result-${qIdx}`);
+  const expDiv = document.getElementById(`exp-${qIdx}`);
+
+  // Already answered
+  if (card.dataset.answered) return;
+  card.dataset.answered = '1';
+  answered++;
+
+  btns.forEach(btn => btn.disabled = true);
+
+  const isCorrect = optIdx === q.ans;
+  if (isCorrect) {
+    correct++;
+    btns[optIdx].classList.add('correct');
+    card.classList.add('answered-correct');
+    resultBanner.className = 'result-banner correct-banner show';
+    resultBanner.innerHTML = '✓ Correct!';
+  } else {
+    btns[optIdx].classList.add('wrong');
+    btns[q.ans].classList.add('reveal');
+    card.classList.add('answered-wrong');
+    resultBanner.className = 'result-banner wrong-banner show';
+    resultBanner.innerHTML = `✗ Incorrect — the correct answer is <strong style="margin-left:4px">${['a','b','c','d','e'][q.ans]})</strong>`;
+  }
+
+  expDiv.classList.add('show');
+  updateScore();
+}
+
+function updateScore() {
+  document.getElementById('scoreDisplay').textContent = `${correct}/${answered}`;
+  const pct = Math.round((answered / questions.length) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = `${answered} of ${questions.length} answered`;
+}
+
+function resetQuiz() {
+  if (!confirm('Reset all answers?')) return;
+  renderQuiz();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+renderQuiz();
+</script>
+</body>
+</html>

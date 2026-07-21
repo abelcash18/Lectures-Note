@@ -1,0 +1,342 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans)}
+#app{padding:1rem 0;max-width:800px;margin:0 auto}
+.header{text-align:center;margin-bottom:1.5rem}
+.header h2{font-size:18px;font-weight:500;color:var(--color-text-primary);margin-bottom:4px}
+.header p{font-size:14px;color:var(--color-text-secondary)}
+.progress-bar{background:var(--color-background-secondary);border-radius:8px;height:8px;margin-bottom:1rem;overflow:hidden}
+.progress-fill{height:100%;background:#1D9E75;border-radius:8px;transition:width 0.3s}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1.5rem}
+.stat{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px;text-align:center}
+.stat-val{font-size:20px;font-weight:500;color:var(--color-text-primary)}
+.stat-label{font-size:12px;color:var(--color-text-secondary);margin-top:2px}
+.qcard{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1.25rem;margin-bottom:1rem}
+.qnum{font-size:12px;color:var(--color-text-secondary);margin-bottom:6px}
+.qtext{font-size:15px;color:var(--color-text-primary);line-height:1.6;margin-bottom:14px;font-weight:500}
+.options{display:flex;flex-direction:column;gap:8px}
+.opt{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);cursor:pointer;font-size:14px;color:var(--color-text-primary);transition:background 0.15s;line-height:1.5}
+.opt:hover{background:var(--color-background-secondary)}
+.opt.selected{border-color:#185FA5;background:#E6F1FB;color:#042C53}
+.opt.correct{border-color:#0F6E56;background:#E1F5EE;color:#04342C}
+.opt.wrong{border-color:#A32D2D;background:#FCEBEB;color:#501313}
+.opt-letter{font-weight:500;min-width:18px}
+.nav{display:flex;gap:8px;margin-top:1rem;flex-wrap:wrap}
+button{padding:8px 16px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:transparent;color:var(--color-text-primary);cursor:pointer;font-size:14px;font-family:var(--font-sans)}
+button:hover{background:var(--color-background-secondary)}
+button.primary{background:#1D9E75;color:#fff;border-color:#0F6E56}
+button.primary:hover{background:#0F6E56}
+.feedback{font-size:13px;margin-top:10px;padding:8px 12px;border-radius:var(--border-radius-md)}
+.feedback.correct{background:#E1F5EE;color:#04342C}
+.feedback.wrong{background:#FCEBEB;color:#501313}
+.q-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;margin-bottom:1.5rem}
+.q-dot{width:100%;aspect-ratio:1;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;cursor:pointer;border:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-secondary)}
+.q-dot.answered{background:#E1F5EE;color:#04342C;border-color:#0F6E56}
+.q-dot.current{background:#185FA5;color:#fff;border-color:#185FA5}
+.q-dot.wrong-ans{background:#FCEBEB;color:#A32D2D;border-color:#A32D2D}
+.result-screen{text-align:center;padding:2rem 1rem}
+.grade-circle{width:140px;height:140px;border-radius:50%;margin:0 auto 1.5rem;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:36px;font-weight:500}
+.section-scores{margin:1.5rem 0;text-align:left}
+.section-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-size:14px}
+.badge{padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500}
+</style>
+<div id="app">
+<div id="test-screen">
+<div class="header">
+<h2>ENT211 CBT Examination</h2>
+<p id="section-label">Loading...</p>
+</div>
+<div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+<div class="stats">
+<div class="stat"><div class="stat-val" id="s-current">1</div><div class="stat-label">Question</div></div>
+<div class="stat"><div class="stat-val" id="s-total">150</div><div class="stat-label">Total</div></div>
+<div class="stat"><div class="stat-val" id="s-correct">0</div><div class="stat-label">Correct</div></div>
+<div class="stat"><div class="stat-val" id="s-score">0%</div><div class="stat-label">Score</div></div>
+</div>
+<div class="q-grid" id="q-grid"></div>
+<div class="qcard" id="qcard">
+<div class="qnum" id="qnum"></div>
+<div class="qtext" id="qtext"></div>
+<div class="options" id="options"></div>
+<div class="feedback" id="feedback" style="display:none"></div>
+</div>
+<div class="nav">
+<button onclick="prevQ()">Previous</button>
+<button onclick="nextQ()">Next</button>
+<button class="primary" onclick="submitAll()" id="submit-btn">Submit Test</button>
+</div>
+</div>
+<div id="result-screen" style="display:none">
+<div class="result-screen">
+<div class="grade-circle" id="grade-circle"></div>
+<h2 id="result-grade" style="font-size:22px;font-weight:500;margin-bottom:8px"></h2>
+<p id="result-summary" style="color:var(--color-text-secondary);font-size:14px;margin-bottom:1.5rem"></p>
+<div class="section-scores" id="section-scores"></div>
+<div style="margin-top:1.5rem;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+<button class="primary" onclick="reviewAnswers()">Review Answers</button>
+<button onclick="restartTest()">Restart Test</button>
+</div>
+</div>
+</div>
+</div>
+<script>
+const ALL_QUESTIONS = [
+{s:"Intro & Concepts",q:"Entrepreneurship is best described as:",o:["Government control of business","The process of starting and managing organizations only","The process of identifying opportunities, innovating and creating value","The exchange of goods in markets"],a:2},
+{s:"Intro & Concepts",q:"The concept of 'creative destruction' was introduced by:",o:["Adam Smith","Peter Drucker","Joseph Schumpeter","Karl Marx"],a:2},
+{s:"Intro & Concepts",q:"Entrepreneurship contributes to economic development mainly through:",o:["Government taxation","Importation of goods","Innovation and job creation","Limiting competition"],a:2},
+{s:"Intro & Concepts",q:"Mesopotamia is historically referred to as:",o:["The Land of Kings","The Cradle of Civilization","The First Capitalist Society","The Home of Industrialization"],a:1},
+{s:"Intro & Concepts",q:"The Phoenicians were known for advancing:",o:["Agricultural systems","Banking regulations","Maritime trade routes","Industrial manufacturing"],a:2},
+{s:"Intro & Concepts",q:"Which innovation helped early merchants conduct trade efficiently?",o:["Military alliances","Record keeping systems","Religious institutions","Farming techniques"],a:1},
+{s:"Intro & Concepts",q:"During the Middle Ages, guilds were formed primarily to:",o:["Promote government authority","Regulate trades and support craftsmen","Stop foreign trade","Encourage industrialization"],a:1},
+{s:"Intro & Concepts",q:"Merchant entrepreneurs during the Middle Ages mainly engaged in:",o:["Local farming","Long-distance trade","Government administration","Religious activities"],a:1},
+{s:"Intro & Concepts",q:"The Renaissance period encouraged entrepreneurship through:",o:["War expansion","Agricultural reforms","Revival of knowledge and expansion of trade","Reduction of commerce"],a:2},
+{s:"Intro & Concepts",q:"The Medici family became famous for their role as:",o:["Military leaders","Farmers","Bankers and patrons of the arts","Government officials"],a:2},
+{s:"Industrial & Modern Era",q:"The Industrial Revolution mainly transformed entrepreneurship through:",o:["Agricultural reforms","Technological innovations and factory systems","Religious movements","Government control"],a:1},
+{s:"Industrial & Modern Era",q:"Richard Arkwright is associated with:",o:["Banking systems","Textile manufacturing innovations","Automobile production","Ship building"],a:1},
+{s:"Industrial & Modern Era",q:"James Watt is known for improving the:",o:["Spinning wheel","Electric generator","Steam engine","Printing press"],a:2},
+{s:"Industrial & Modern Era",q:"Corporate entrepreneurship refers to:",o:["Government ownership of companies","Innovation within established organizations","Small-scale businesses","Non-profit organizations"],a:1},
+{s:"Industrial & Modern Era",q:"Silicon Valley is known primarily for:",o:["Agricultural innovation","Mining activities","Technological entrepreneurship","Military industries"],a:2},
+{s:"Industrial & Modern Era",q:"The modern entrepreneurial landscape is strongly influenced by:",o:["Feudal systems","Colonial trade","Digital economy and e-commerce","Agricultural revolutions"],a:2},
+{s:"Industrial & Modern Era",q:"Social entrepreneurship focuses primarily on:",o:["Maximizing shareholder profit","Government development plans","Solving social problems through business innovation","Agricultural development"],a:2},
+{s:"Industrial & Modern Era",q:"Muhammad Yunus is known for:",o:["Oil exploration","Automobile manufacturing","Microfinance initiatives","Industrial robotics"],a:2},
+{s:"Industrial & Modern Era",q:"The word 'entrepreneur' originated from:",o:["Latin","German","French","Spanish"],a:2},
+{s:"Industrial & Modern Era",q:"According to J.B. Say, entrepreneurs primarily:",o:["Work as government officials","Provide labor","Combine factors of production to create wealth","Manage trade unions"],a:2},
+{s:"Definitions & Process",q:"An entrepreneur is primarily a person who:",o:["Works for a government agency","Avoids business risks","Identifies opportunities and organizes resources to create a business","Manages only large corporations"],a:2},
+{s:"Definitions & Process",q:"Innovation refers to:",o:["Selling old products","Introducing new ideas, products, or processes","Avoiding competition","Reducing business activities"],a:1},
+{s:"Definitions & Process",q:"Risk-taking in entrepreneurship means:",o:["Avoiding uncertain situations","Government protection from loss","Undertaking uncertain business activities with expectation of profit","Working without capital"],a:2},
+{s:"Definitions & Process",q:"Which of the following is the first stage of the entrepreneurial process?",o:["Business expansion","Profit maximization","Opportunity identification","Business liquidation"],a:2},
+{s:"Definitions & Process",q:"Entrepreneurship as a behaviour emphasizes:",o:["Government policies","Personal traits such as creativity and initiative","Capital availability","Industrial regulations"],a:1},
+{s:"Definitions & Process",q:"Which of the following is NOT a characteristic of entrepreneurship?",o:["Innovation","Risk-taking","Creativity","Complete certainty of profit"],a:3},
+{s:"Definitions & Process",q:"Entrepreneurs contribute to economic development mainly by:",o:["Reducing employment opportunities","Creating businesses and generating jobs","Eliminating competition","Increasing government spending"],a:1},
+{s:"Definitions & Process",q:"The entrepreneurial process involves:",o:["Opportunity recognition and innovation","Resource mobilization","Business creation","All of the above"],a:3},
+{s:"Definitions & Process",q:"The term entrepreneur comes from the French word meaning:",o:["To invest","To manage","To undertake","To produce"],a:2},
+{s:"Definitions & Process",q:"'Creative destruction' describes how entrepreneurs:",o:["Destroy existing businesses intentionally","Disrupt markets through innovation","Create monopolies","Reduce market competition"],a:1},
+{s:"Functions & Characteristics",q:"One major function of an entrepreneur is:",o:["Government policy formulation","Identifying business opportunities","Conducting national elections","Regulating industries"],a:1},
+{s:"Functions & Characteristics",q:"Entrepreneurs organize which factors of production?",o:["Land","Labour","Capital","All of the above"],a:3},
+{s:"Functions & Characteristics",q:"The willingness of entrepreneurs to face uncertainty is known as:",o:["Innovation","Leadership","Risk-bearing","Delegation"],a:2},
+{s:"Functions & Characteristics",q:"Introducing new products and ideas in business refers to:",o:["Marketing","Production","Innovation","Delegation"],a:2},
+{s:"Functions & Characteristics",q:"Which is a characteristic of successful entrepreneurs?",o:["Laziness","Fear of failure","Persistence","Avoidance of responsibility"],a:2},
+{s:"Functions & Characteristics",q:"Entrepreneurs contribute to economic development by:",o:["Reducing productivity","Creating employment opportunities","Eliminating businesses","Increasing imports only"],a:1},
+{s:"Functions & Characteristics",q:"Self-confidence in entrepreneurship means:",o:["Avoiding challenges","Believing in one's ability to succeed","Ignoring competition","Avoiding innovation"],a:1},
+{s:"Functions & Characteristics",q:"Entrepreneurs make decisions regarding:",o:["Pricing","Marketing","Production","All of the above"],a:3},
+{s:"Functions & Characteristics",q:"The ability to influence and guide workers toward business goals is:",o:["Risk-taking","Leadership","Delegation","Communication"],a:1},
+{s:"Functions & Characteristics",q:"The ability to generate new ideas in entrepreneurship is known as:",o:["Delegation","Creativity","Supervision","Control"],a:1},
+{s:"Types of Entrepreneurs",q:"Entrepreneurs who introduce new ideas and technologies are known as:",o:["Fabian entrepreneurs","Drone entrepreneurs","Innovative entrepreneurs","Traditional entrepreneurs"],a:2},
+{s:"Types of Entrepreneurs",q:"Entrepreneurs who copy or adapt existing successful business ideas are called:",o:["Innovative entrepreneurs","Fabian entrepreneurs","Imitative entrepreneurs","Drone entrepreneurs"],a:2},
+{s:"Types of Entrepreneurs",q:"Fabian entrepreneurs are characterized by:",o:["Rapid adoption of innovation","Cautious adoption of change","Complete rejection of innovation","Aggressive innovation"],a:1},
+{s:"Types of Entrepreneurs",q:"Entrepreneurs who refuse to adopt innovation are known as:",o:["Innovative entrepreneurs","Fabian entrepreneurs","Drone entrepreneurs","Small-scale entrepreneurs"],a:2},
+{s:"Types of Entrepreneurs",q:"Entrepreneurs who operate small businesses with limited capital are:",o:["Corporate entrepreneurs","Small-scale entrepreneurs","Innovative entrepreneurs","Fabian entrepreneurs"],a:1},
+{s:"Types of Entrepreneurs",q:"Entrepreneurs motivated mainly by financial gain are driven by:",o:["Social recognition","Independence","Profit motive","Innovation"],a:2},
+{s:"Types of Entrepreneurs",q:"The desire to be one's own boss reflects which motivation?",o:["Achievement motivation","Independence motivation","Social motivation","Financial motivation"],a:1},
+{s:"Types of Entrepreneurs",q:"Entrepreneurs who aim to solve social problems through business are:",o:["Industrial entrepreneurs","Social entrepreneurs","Fabian entrepreneurs","Imitative entrepreneurs"],a:1},
+{s:"Types of Entrepreneurs",q:"Large-scale entrepreneurs typically operate:",o:["Informal businesses","Small retail stores","Large corporations and industries","Non-profit organizations"],a:2},
+{s:"Types of Entrepreneurs",q:"Achievement motivation in entrepreneurship refers to:",o:["Avoiding competition","Desire to accomplish challenging goals","Government support","Market protection"],a:1},
+{s:"Skills & Competencies",q:"Entrepreneurial skills refer to:",o:["Government policies for business","Abilities required to start and manage a business","Marketing regulations","Trade restrictions"],a:1},
+{s:"Skills & Competencies",q:"Skills related to production techniques and industry knowledge are known as:",o:["Marketing skills","Financial skills","Technical skills","Leadership skills"],a:2},
+{s:"Skills & Competencies",q:"Planning, organizing, and controlling business activities are part of:",o:["Technical skills","Managerial skills","Communication skills","Marketing skills"],a:1},
+{s:"Skills & Competencies",q:"Identifying customer needs and promoting products are part of:",o:["Financial management","Production management","Marketing skills","Technical skills"],a:2},
+{s:"Skills & Competencies",q:"Preparing budgets and controlling costs require:",o:["Leadership skills","Technical skills","Financial management skills","Communication skills"],a:2},
+{s:"Skills & Competencies",q:"The ability to identify potential business opportunities is known as:",o:["Risk-taking","Opportunity recognition","Delegation","Planning"],a:1},
+{s:"Skills & Competencies",q:"Making timely and effective business decisions requires:",o:["Communication competence","Technical knowledge","Decision-making ability","Marketing experience"],a:2},
+{s:"Skills & Competencies",q:"Risk management involves:",o:["Avoiding business activities","Eliminating competition","Identifying and minimizing potential business risks","Reducing production"],a:2},
+{s:"Skills & Competencies",q:"Effective communication helps entrepreneurs to:",o:["Avoid customers","Build relationships with stakeholders","Reduce profits","Ignore employees"],a:1},
+{s:"Skills & Competencies",q:"Leadership competence in entrepreneurship involves:",o:["Avoiding employees","Motivating and guiding workers","Ignoring teamwork","Reducing productivity"],a:1},
+{s:"Economic Development",q:"Entrepreneurship contributes to economic development primarily through:",o:["Government regulations","Innovation and job creation","Reducing productivity","Limiting trade"],a:1},
+{s:"Economic Development",q:"Economic development refers to:",o:["Reduction of industries","Improvement in economic and social welfare of citizens","Reduction of trade","Increase in government spending only"],a:1},
+{s:"Economic Development",q:"Small and Medium Enterprises (SMEs) are important because they:",o:["Increase imports","Reduce employment","Promote local economic development","Eliminate innovation"],a:2},
+{s:"Economic Development",q:"One major role of entrepreneurship is:",o:["Increasing unemployment","Utilizing available resources efficiently","Limiting production","Preventing innovation"],a:1},
+{s:"Economic Development",q:"Entrepreneurship helps reduce unemployment by:",o:["Closing industries","Reducing investments","Creating business ventures and employment opportunities","Limiting trade activities"],a:2},
+{s:"Economic Development",q:"Export activities by entrepreneurs help to:",o:["Increase poverty","Reduce foreign exchange","Earn foreign exchange for the country","Reduce economic development"],a:2},
+{s:"Economic Development",q:"One key reason entrepreneurship is important in Nigeria is:",o:["Limited population","High unemployment rates","Lack of industries","Lack of markets"],a:1},
+{s:"Economic Development",q:"Economic diversification means:",o:["Dependence on a single sector","Developing multiple sectors of the economy","Reducing industries","Eliminating trade"],a:1},
+{s:"Economic Development",q:"Entrepreneurs improve living standards by:",o:["Increasing taxes","Creating employment and income opportunities","Reducing production","Eliminating competition"],a:1},
+{s:"Economic Development",q:"Entrepreneurship promotes balanced regional development by:",o:["Limiting business activities","Establishing businesses in different regions","Increasing imports","Reducing industries"],a:1},
+{s:"Creativity & Innovation",q:"Creativity in entrepreneurship refers to:",o:["Implementing ideas","Generating new and original ideas","Managing employees","Controlling finances"],a:1},
+{s:"Creativity & Innovation",q:"Innovation refers to:",o:["Generating ideas only","Transforming ideas into useful products or services","Marketing products","Managing business operations"],a:1},
+{s:"Creativity & Innovation",q:"Which of the following is a major source of business ideas?",o:["Government taxes","Personal experience","Trade restrictions","Inflation"],a:1},
+{s:"Creativity & Innovation",q:"Market research helps entrepreneurs to:",o:["Reduce production","Identify customer needs and market opportunities","Avoid competition","Eliminate risk"],a:1},
+{s:"Creativity & Innovation",q:"Customer feedback helps entrepreneurs to:",o:["Reduce innovation","Improve products and services","Increase taxes","Reduce marketing"],a:1},
+{s:"Creativity & Innovation",q:"Technological advancement can lead to:",o:["Reduced business opportunities","Creation of new business ideas","Elimination of innovation","Reduction of entrepreneurship"],a:1},
+{s:"Creativity & Innovation",q:"Opportunity identification involves:",o:["Ignoring market trends","Recognizing and evaluating business opportunities","Reducing production","Eliminating competition"],a:1},
+{s:"Creativity & Innovation",q:"The first step in opportunity identification is:",o:["Risk evaluation","Recognizing market needs","Marketing the product","Hiring employees"],a:1},
+{s:"Creativity & Innovation",q:"Evaluating business ideas involves assessing:",o:["Feasibility and profitability","Technical requirements","Market demand","All of the above"],a:3},
+{s:"Creativity & Innovation",q:"Creativity and innovation help entrepreneurs to:",o:["Reduce productivity","Avoid competition","Develop unique products and gain competitive advantage","Reduce market opportunities"],a:2},
+{s:"Business Environment",q:"The business environment refers to:",o:["Internal factors only","External factors only","All factors influencing business operations","Government policies only"],a:2},
+{s:"Business Environment",q:"Factors within the control of an entrepreneur are known as:",o:["External factors","Economic factors","Internal environment","Political environment"],a:2},
+{s:"Business Environment",q:"Which of the following is an internal business environment factor?",o:["Government regulations","Inflation rate","Human resources","Market competition"],a:2},
+{s:"Business Environment",q:"Interest rates and inflation are examples of:",o:["Social factors","Economic factors","Technological factors","Cultural factors"],a:1},
+{s:"Business Environment",q:"Government taxation policies fall under:",o:["Social factors","Political and legal factors","Economic factors","Technological factors"],a:1},
+{s:"Business Environment",q:"Technological factors affect businesses by influencing:",o:["Government decisions","Cultural traditions","Production processes and innovation","Political stability"],a:2},
+{s:"Business Environment",q:"Competition in business encourages firms to:",o:["Reduce productivity","Improve product quality and innovation","Stop production","Avoid customers"],a:1},
+{s:"Business Environment",q:"Social and cultural factors influence:",o:["Inflation rates","Interest rates","Consumer behavior and preferences","Tax policies"],a:2},
+{s:"Business Environment",q:"Government programs supporting entrepreneurs can:",o:["Reduce innovation","Encourage business development","Increase unemployment","Reduce productivity"],a:1},
+{s:"Business Environment",q:"Which best describes the external environment?",o:["Factors within the organization","Factors outside the entrepreneur's control","Organizational culture","Employee management"],a:1},
+{s:"Business Planning",q:"A business plan is best described as:",o:["A government policy document","A written document outlining business goals and strategies","A marketing advertisement","A financial statement only"],a:1},
+{s:"Business Planning",q:"One major importance of a business plan is that it:",o:["Eliminates competition","Helps entrepreneurs secure funding","Removes business risks completely","Reduces production"],a:1},
+{s:"Business Planning",q:"The section of a business plan that provides a brief overview is called:",o:["Market analysis","Financial plan","Executive summary","Organizational structure"],a:2},
+{s:"Business Planning",q:"Market analysis focuses on:",o:["Employee management","Customer needs and market trends","Financial records","Production techniques"],a:1},
+{s:"Business Planning",q:"The financial plan includes:",o:["Marketing strategies","Organizational structure","Revenue projections and profit forecasts","Customer complaints"],a:2},
+{s:"Business Planning",q:"The marketing plan describes how the business will:",o:["Manage employees","Promote products and reach customers","Prepare financial reports","Control production"],a:1},
+{s:"Business Planning",q:"The section describing management roles and responsibilities is:",o:["Financial plan","Market analysis","Organizational structure","Executive summary"],a:2},
+{s:"Business Planning",q:"Business planning helps entrepreneurs to:",o:["Avoid competition","Make informed business decisions","Eliminate risk entirely","Reduce customer demand"],a:1},
+{s:"Business Planning",q:"Startup costs are usually included in the:",o:["Marketing plan","Business description","Financial plan","Executive summary"],a:2},
+{s:"Business Planning",q:"Which of the following is NOT a component of a business plan?",o:["Executive summary","Market analysis","Financial plan","Weather forecast"],a:3},
+{s:"Business Risk & Failure",q:"Business risk refers to:",o:["Guaranteed profit","Possibility of loss or failure","Government policy","Business expansion"],a:1},
+{s:"Business Risk & Failure",q:"Risk arising from inability to pay debts is:",o:["Market risk","Operational risk","Financial risk","Legal risk"],a:2},
+{s:"Business Risk & Failure",q:"Risk caused by changes in customer demand is:",o:["Market risk","Financial risk","Legal risk","Social risk"],a:0},
+{s:"Business Risk & Failure",q:"Which of the following is a major cause of business failure?",o:["Good planning","Poor management","Customer satisfaction","Innovation"],a:1},
+{s:"Business Risk & Failure",q:"Declining sales is a:",o:["Cause of success","Sign of business failure","Marketing strategy","Growth indicator"],a:1},
+{s:"Business Risk & Failure",q:"Poor accounting practices may lead to:",o:["Profit maximization","Financial mismanagement","Employee satisfaction","Business growth"],a:1},
+{s:"Business Risk & Failure",q:"Selling a business to another owner is called:",o:["Succession","Liquidation","Business sale","Merger"],a:2},
+{s:"Business Risk & Failure",q:"Combining two companies into one is:",o:["Acquisition","Merger","Liquidation","Franchise"],a:1},
+{s:"Business Risk & Failure",q:"Closing a business and selling assets to pay debts is:",o:["Acquisition","Liquidation","Expansion","Diversification"],a:1},
+{s:"Business Risk & Failure",q:"The best way to prevent business failure is:",o:["Ignoring customers","Lack of planning","Effective planning and management","Increasing debt"],a:2},
+{s:"Growth Strategies",q:"Business growth refers to:",o:["Business failure","Expansion of business operations","Reduction of production","Closure of business"],a:1},
+{s:"Growth Strategies",q:"Increasing sales of existing products in existing markets is:",o:["Diversification","Market penetration","Product development","Market exit"],a:1},
+{s:"Growth Strategies",q:"Selling existing products in new markets is:",o:["Market development","Market penetration","Product elimination","Business liquidation"],a:0},
+{s:"Growth Strategies",q:"Introducing new products to existing markets is:",o:["Product development","Diversification","Market exit","Cost leadership"],a:0},
+{s:"Growth Strategies",q:"Introducing new products to new markets is called:",o:["Expansion","Diversification","Market penetration","Promotion"],a:1},
+{s:"Growth Strategies",q:"A business expansion strategy allowing others to use its brand name is:",o:["Partnership","Franchising","Liquidation","Outsourcing"],a:1},
+{s:"Growth Strategies",q:"Business collaboration for mutual benefit is known as:",o:["Strategic partnership","Market penetration","Liquidation","Sole proprietorship"],a:0},
+{s:"Growth Strategies",q:"Combining two companies into one organization is:",o:["Diversification","Merger","Liquidation","Franchise"],a:1},
+{s:"Growth Strategies",q:"Business growth can lead to:",o:["Job loss","Business failure","Employment creation","Market collapse"],a:2},
+{s:"Growth Strategies",q:"Diversification is considered risky because:",o:["It involves existing markets","It involves new products and new markets","It reduces profits","It eliminates competition"],a:1},
+{s:"Ethics & Social Responsibility",q:"Business ethics refers to:",o:["Government policy","Moral principles guiding business behavior","Business expansion strategies","Profit maximization techniques"],a:1},
+{s:"Ethics & Social Responsibility",q:"Misleading customers through incorrect product information is called:",o:["Product diversification","False advertising","Market penetration","Branding"],a:1},
+{s:"Ethics & Social Responsibility",q:"Paying workers unfair wages is an example of:",o:["Ethical business practice","Worker exploitation","Social responsibility","Market expansion"],a:1},
+{s:"Ethics & Social Responsibility",q:"Environmental pollution by businesses is considered:",o:["Ethical practice","Social responsibility","Unethical behavior","Marketing strategy"],a:2},
+{s:"Ethics & Social Responsibility",q:"Corporate social responsibility refers to:",o:["Maximizing profits only","Business obligation to society","Government taxation","Business competition"],a:1},
+{s:"Ethics & Social Responsibility",q:"Providing safe products to customers is:",o:["Social responsibility","Diversification","Cost reduction","Market development"],a:0},
+{s:"Ethics & Social Responsibility",q:"Which of the following improves business reputation?",o:["Corruption","Ethical behavior","Deception","Product misrepresentation"],a:1},
+{s:"Ethics & Social Responsibility",q:"Social responsibility can help businesses:",o:["Lose customers","Build public trust","Increase pollution","Avoid competition"],a:1},
+{s:"Ethics & Social Responsibility",q:"Bribery in business is an example of:",o:["Ethical behavior","Innovation","Corruption","Customer satisfaction"],a:2},
+{s:"Ethics & Social Responsibility",q:"Businesses contributing to community development demonstrate:",o:["Diversification","Social responsibility","Market segmentation","Competition"],a:1},
+{s:"Government & Institutions",q:"Government entrepreneurship policy refers to:",o:["Private business ownership","Government strategies to promote entrepreneurship","Individual profit maximization","Business competition"],a:1},
+{s:"Government & Institutions",q:"The agency responsible for SME development in Nigeria is:",o:["CBN","SMEDAN","NNPC","EFCC"],a:1},
+{s:"Government & Institutions",q:"The Bank of Industry primarily provides:",o:["Tax collection","Industrial loans","Police services","Import licenses"],a:1},
+{s:"Government & Institutions",q:"The agency responsible for business registration in Nigeria is:",o:["BOI","SMEDAN","CAC","NDE"],a:2},
+{s:"Government & Institutions",q:"The National Directorate of Employment focuses on:",o:["Military training","Job creation and skill development","Taxation","Foreign trade"],a:1},
+{s:"Government & Institutions",q:"Which institution regulates monetary policy in Nigeria?",o:["BOI","CBN","SMEDAN","NDE"],a:1},
+{s:"Government & Institutions",q:"Government entrepreneurship programs help to:",o:["Increase unemployment","Support business development","Eliminate businesses","Reduce innovation"],a:1},
+{s:"Government & Institutions",q:"One major challenge of government entrepreneurship programs is:",o:["High innovation","Easy access to loans","Bureaucracy","Rapid development"],a:2},
+{s:"Government & Institutions",q:"Government support for entrepreneurship helps to:",o:["Reduce economic growth","Create employment","Increase poverty","Stop business development"],a:1},
+{s:"Government & Institutions",q:"Entrepreneurs must register their businesses with:",o:["NDE","CAC","SMEDAN","BOI"],a:1},
+{s:"Challenges & Future",q:"One major challenge facing entrepreneurs is:",o:["Excess capital","Lack of funding","High innovation","Market monopoly"],a:1},
+{s:"Challenges & Future",q:"Poor electricity supply is an example of:",o:["Infrastructure challenge","Financial opportunity","Market expansion","Innovation strategy"],a:0},
+{s:"Challenges & Future",q:"Lack of managerial skills may lead to:",o:["Business success","Effective planning","Business failure","Market dominance"],a:2},
+{s:"Challenges & Future",q:"High taxation can discourage:",o:["Business expansion","Entrepreneurship","Economic development","Market growth"],a:1},
+{s:"Challenges & Future",q:"Continuous training helps entrepreneurs:",o:["Reduce knowledge","Improve business skills","Eliminate competition","Stop innovation"],a:1},
+{s:"Challenges & Future",q:"Businesses operating mainly through the internet are called:",o:["Agricultural businesses","Digital businesses","Industrial businesses","Manual businesses"],a:1},
+{s:"Challenges & Future",q:"Entrepreneurship that focuses on solving social problems is:",o:["Industrial entrepreneurship","Social entrepreneurship","Agricultural entrepreneurship","Corporate entrepreneurship"],a:1},
+{s:"Challenges & Future",q:"Global entrepreneurship allows businesses to:",o:["Operate only locally","Sell products internationally","Eliminate technology","Avoid competition"],a:1},
+{s:"Challenges & Future",q:"Proper financial management helps businesses:",o:["Lose funds","Improve profitability","Increase waste","Avoid planning"],a:1},
+{s:"Challenges & Future",q:"One way to overcome entrepreneurial challenges is:",o:["Ignoring planning","Avoiding innovation","Strategic planning","Reducing knowledge"],a:2}
+];
+
+let current=0, answers=new Array(150).fill(-1), submitted=false, reviewMode=false;
+
+function renderGrid(){
+  const g=document.getElementById('q-grid');
+  g.innerHTML='';
+  ALL_QUESTIONS.forEach((_,i)=>{
+    const d=document.createElement('div');
+    d.className='q-dot'+(i===current?' current':answers[i]!==-1?(submitted&&answers[i]!==ALL_QUESTIONS[i].a?' wrong-ans':' answered'):'');
+    d.textContent=i+1;
+    d.onclick=()=>{current=i;render()};
+    g.appendChild(d);
+  });
+}
+
+function render(){
+  const q=ALL_QUESTIONS[current];
+  document.getElementById('qnum').textContent=`Question ${current+1} of 150 — ${q.s}`;
+  document.getElementById('qtext').textContent=q.q;
+  document.getElementById('s-current').textContent=current+1;
+  const answered=answers.filter(a=>a!==-1).length;
+  const correct=submitted?answers.filter((a,i)=>a===ALL_QUESTIONS[i].a).length:answers.filter((a,i)=>a!==-1&&a===ALL_QUESTIONS[i].a).length;
+  document.getElementById('s-correct').textContent=correct;
+  document.getElementById('s-score').textContent=answered>0?Math.round(correct/Math.max(answered,1)*100)+'%':'0%';
+  document.getElementById('progress').style.width=(answered/150*100)+'%';
+  document.getElementById('section-label').textContent=`Section: ${q.s}`;
+  const opts=document.getElementById('options');
+  opts.innerHTML='';
+  q.o.forEach((opt,i)=>{
+    const d=document.createElement('div');
+    let cls='opt';
+    if(submitted||reviewMode){
+      if(i===q.a) cls+=' correct';
+      else if(answers[current]===i&&i!==q.a) cls+=' wrong';
+    } else if(answers[current]===i) cls+=' selected';
+    d.className=cls;
+    d.innerHTML=`<span class="opt-letter">${['A','B','C','D'][i]}.</span><span>${opt}</span>`;
+    if(!submitted&&!reviewMode) d.onclick=()=>{answers[current]=i;render();renderGrid()};
+    opts.appendChild(d);
+  });
+  const fb=document.getElementById('feedback');
+  if(submitted||reviewMode){
+    fb.style.display='block';
+    if(answers[current]===q.a){fb.className='feedback correct';fb.textContent='Correct! '+q.o[q.a]+' is the right answer.';}
+    else{fb.className='feedback wrong';fb.textContent=`Wrong. The correct answer is ${['A','B','C','D'][q.a]}. ${q.o[q.a]}`;}
+  } else fb.style.display='none';
+  renderGrid();
+}
+
+function prevQ(){if(current>0){current--;render();}}
+function nextQ(){if(current<149){current++;render();}}
+
+function submitAll(){
+  const answered=answers.filter(a=>a!==-1).length;
+  if(answered<150&&!confirm(`You have answered ${answered}/150 questions. Submit anyway?`))return;
+  submitted=true;
+  showResults();
+}
+
+function showResults(){
+  document.getElementById('test-screen').style.display='none';
+  document.getElementById('result-screen').style.display='block';
+  const total=150;
+  const correct=answers.filter((a,i)=>a===ALL_QUESTIONS[i].a).length;
+  const pct=Math.round(correct/total*100);
+  let grade,color,bg;
+  if(pct>=70){grade='Pass';color='#04342C';bg='#E1F5EE';}
+  else{grade='Fail';color='#501313';bg='#FCEBEB';}
+  const gc=document.getElementById('grade-circle');
+  gc.style.background=bg;gc.style.color=color;
+  gc.innerHTML=`<span>${pct}%</span><span style="font-size:16px">${grade}</span>`;
+  document.getElementById('result-grade').textContent=`${correct} / ${total} correct`;
+  document.getElementById('result-summary').textContent=`You answered ${answers.filter(a=>a!==-1).length} questions. Score: ${pct}% — ${pct>=70?'Congratulations, you passed!':'Keep studying and try again.'}`;
+  const sections={};
+  ALL_QUESTIONS.forEach((q,i)=>{
+    if(!sections[q.s])sections[q.s]={total:0,correct:0};
+    sections[q.s].total++;
+    if(answers[i]===q.a)sections[q.s].correct++;
+  });
+  const sc=document.getElementById('section-scores');
+  sc.innerHTML='<p style="font-weight:500;font-size:15px;margin-bottom:8px">Performance by section</p>';
+  Object.entries(sections).forEach(([s,v])=>{
+    const p=Math.round(v.correct/v.total*100);
+    const row=document.createElement('div');
+    row.className='section-row';
+    const badgeColor=p>=70?'#E1F5EE':'#FCEBEB';
+    const badgeText=p>=70?'#04342C':'#501313';
+    row.innerHTML=`<span style="font-size:13px">${s}</span><span style="display:flex;gap:8px;align-items:center"><span style="font-size:13px;color:var(--color-text-secondary)">${v.correct}/${v.total}</span><span class="badge" style="background:${badgeColor};color:${badgeText}">${p}%</span></span>`;
+    sc.appendChild(row);
+  });
+}
+
+function reviewAnswers(){
+  document.getElementById('result-screen').style.display='none';
+  document.getElementById('test-screen').style.display='block';
+  reviewMode=true;current=0;render();
+}
+
+function restartTest(){
+  answers=new Array(150).fill(-1);submitted=false;reviewMode=false;current=0;
+  document.getElementById('result-screen').style.display='none';
+  document.getElementById('test-screen').style.display='block';
+  render();
+}
+
+render();
+</script>

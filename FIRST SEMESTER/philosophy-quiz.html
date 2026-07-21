@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Philosophy & Logic Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07070f;--bg2:#0e0e1f;--bg3:#161630;--bg4:#1e1e3a;
+  --text:#e8e8f5;--text2:#8888aa;--text3:#5555777;
+  --accent:#7c6aff;--accent2:#b8adff;--accent3:#4a3dcc;
+  --correct:#22d47a;--wrong:#ff4d6a;--warn:#f5a623;
+  --border:#252545;--card:#12122a;
+  --shadow:0 8px 40px rgba(0,0,0,0.6);
+  --glow:0 0 30px rgba(124,106,255,0.25);
+  --r:16px;
+}
+.light{
+  --bg:#f0f0fa;--bg2:#ffffff;--bg3:#e8e8f8;--bg4:#ddddf0;
+  --text:#1a1a30;--text2:#555577;
+  --border:#d8d8ee;--card:#ffffff;
+  --shadow:0 8px 40px rgba(100,100,180,0.12);
+  --glow:0 0 30px rgba(124,106,255,0.1);
+}
+
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;min-height:100vh;overflow-x:hidden;transition:background 0.3s,color 0.3s}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--accent3);border-radius:3px}
+
+/* LAYOUT */
+#app{max-width:760px;margin:0 auto;padding:20px 16px 80px;min-height:100vh}
+
+/* SCREEN TRANSITIONS */
+.screen{display:none;animation:fadeUp 0.45s cubic-bezier(.22,1,.36,1) both}
+.screen.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideDown{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pop{0%{transform:scale(0.92)}60%{transform:scale(1.04)}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+@keyframes pulseGlow{0%,100%{box-shadow:var(--glow)}50%{box-shadow:0 0 50px rgba(124,106,255,0.4)}}
+@keyframes timerPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes countdownBlink{0%,100%{opacity:1}50%{opacity:0.6}}
+@keyframes barFill{from{width:0}to{width:var(--w)}}
+@keyframes spinIn{from{transform:rotate(-180deg) scale(0);opacity:0}to{transform:rotate(0) scale(1);opacity:1}}
+
+/* ============ SETUP SCREEN ============ */
+#setup-screen{padding-top:20px}
+.setup-bg-orb{position:fixed;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(124,106,255,0.08) 0%,transparent 70%);top:-100px;right:-150px;pointer-events:none;z-index:0}
+.setup-bg-orb2{position:fixed;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(124,106,255,0.05) 0%,transparent 70%);bottom:-80px;left:-100px;pointer-events:none;z-index:0}
+
+.setup-hero{text-align:center;padding:40px 0 32px;position:relative;z-index:1}
+.hero-icon{font-size:72px;line-height:1;margin-bottom:16px;animation:spinIn 0.7s cubic-bezier(.22,1,.36,1) 0.1s both}
+.hero-title{font-family:'Cormorant Garamond',serif;font-size:2.8rem;font-weight:700;background:linear-gradient(135deg,var(--accent2),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.1}
+.hero-sub{color:var(--text2);margin-top:10px;font-size:0.9rem;font-weight:300;letter-spacing:.03em}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);color:var(--accent2);padding:6px 18px;border-radius:40px;font-size:0.82rem;font-weight:500;margin-top:14px;letter-spacing:.02em}
+
+.stats-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:0 0 28px;position:relative;z-index:1}
+.stat-chip{background:var(--bg3);border:1px solid var(--border);padding:8px 18px;border-radius:30px;font-size:0.83rem;color:var(--text2);font-weight:400}
+.stat-chip b{color:var(--accent2);font-weight:600}
+
+.setup-card{background:var(--card);border:1px solid var(--border);border-radius:24px;padding:32px;box-shadow:var(--shadow);position:relative;z-index:1;animation:pulseGlow 4s ease-in-out infinite}
+.form-group{margin-bottom:26px}
+.form-label{display:flex;align-items:center;gap:8px;font-size:0.88rem;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px}
+.form-label span{font-size:1rem}
+
+.num-input-wrap{position:relative}
+.num-input{width:100%;background:var(--bg3);border:2px solid var(--border);color:var(--text);padding:15px 20px;border-radius:14px;font-size:1.15rem;font-family:'Sora',sans-serif;font-weight:500;outline:none;transition:border-color 0.2s,box-shadow 0.2s;-moz-appearance:textfield}
+.num-input::-webkit-outer-spin-button,.num-input::-webkit-inner-spin-button{-webkit-appearance:none}
+.num-input:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(124,106,255,0.12)}
+.num-hint{font-size:0.78rem;color:var(--text2);margin-top:7px;font-weight:300}
+.num-hint b{color:var(--accent2)}
+
+.seg-group{display:flex;gap:10px}
+.seg-btn{flex:1;padding:13px 10px;border:2px solid var(--border);background:var(--bg3);color:var(--text2);border-radius:12px;font-family:'Sora',sans-serif;font-size:0.92rem;font-weight:500;cursor:pointer;transition:all 0.2s;text-align:center}
+.seg-btn:hover{border-color:var(--accent);color:var(--accent2)}
+.seg-btn.active{border-color:var(--accent);background:rgba(124,106,255,0.15);color:var(--accent2);box-shadow:0 0 0 3px rgba(124,106,255,0.1)}
+
+.start-btn{width:100%;padding:18px;background:linear-gradient(135deg,var(--accent),var(--accent3));color:white;border:none;border-radius:14px;font-family:'Sora',sans-serif;font-size:1.05rem;font-weight:600;cursor:pointer;transition:all 0.25s;margin-top:8px;letter-spacing:.02em;position:relative;overflow:hidden}
+.start-btn::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,0.1),transparent);opacity:0;transition:opacity 0.2s}
+.start-btn:hover::after{opacity:1}
+.start-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 12px 32px rgba(124,106,255,0.5)}
+.start-btn:active{transform:translateY(0)}
+.start-btn:disabled{opacity:0.35;cursor:not-allowed;transform:none}
+
+/* ============ QUIZ SCREEN ============ */
+#quiz-screen{}
+.q-topbar{position:sticky;top:0;z-index:20;background:var(--bg);padding:14px 0 10px;backdrop-filter:blur(8px)}
+.progress-track{height:3px;background:var(--bg4);border-radius:2px;margin-bottom:14px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent3),var(--accent),var(--accent2));border-radius:2px;transition:width 0.5s cubic-bezier(.22,1,.36,1)}
+.q-nav{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.q-counter-wrap{display:flex;align-items:center;gap:8px}
+.q-num{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:700;color:var(--accent2);line-height:1}
+.q-total{color:var(--text2);font-size:0.82rem;font-weight:300;margin-top:2px}
+.q-section-tag{background:var(--bg3);border:1px solid var(--border);padding:5px 12px;border-radius:20px;font-size:0.73rem;color:var(--text2);max-width:200px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;font-weight:400}
+
+/* TIMER */
+.timer-wrap{flex-shrink:0}
+.timer-svg{display:block}
+.timer-track{fill:none;stroke:var(--bg4);stroke-width:4}
+.timer-ring{fill:none;stroke-width:4;stroke-linecap:round;transition:stroke-dashoffset 1s linear,stroke 0.4s;transform:rotate(-90deg);transform-origin:50% 50%}
+.timer-text{font-family:'Sora',sans-serif;font-size:13px;font-weight:600;fill:var(--accent2);dominant-baseline:central;text-anchor:middle}
+
+/* QUESTION CARD */
+.q-card{background:var(--card);border:1px solid var(--border);border-radius:22px;padding:30px 28px;margin-top:14px;box-shadow:var(--shadow)}
+.q-chapter{font-size:0.73rem;color:var(--text2);font-weight:400;letter-spacing:.05em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.q-chapter::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0}
+.q-text{font-family:'Cormorant Garamond',serif;font-size:1.35rem;font-weight:600;line-height:1.55;color:var(--text);margin-bottom:24px}
+
+.options{display:flex;flex-direction:column;gap:11px}
+.opt-btn{display:flex;align-items:center;gap:14px;padding:14px 18px;background:var(--bg3);border:2px solid var(--border);border-radius:14px;cursor:pointer;font-family:'Sora',sans-serif;font-size:0.92rem;color:var(--text2);text-align:left;transition:all 0.18s;width:100%;position:relative;overflow:hidden}
+.opt-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(124,106,255,0.06),transparent);opacity:0;transition:opacity 0.2s}
+.opt-btn:hover:not([disabled]):not(.revealed){border-color:var(--accent);color:var(--text);background:var(--bg4)}
+.opt-btn:hover:not([disabled]):not(.revealed)::before{opacity:1}
+.opt-btn:hover:not([disabled]):not(.revealed) .opt-letter{background:var(--accent);color:white}
+.opt-btn.sel{border-color:var(--accent);background:rgba(124,106,255,0.12);color:var(--text)}
+.opt-btn.sel .opt-letter{background:var(--accent);color:white}
+.opt-btn.correct{border-color:var(--correct);background:rgba(34,212,122,0.1);color:var(--text);animation:pop 0.35s ease}
+.opt-btn.correct .opt-letter{background:var(--correct);color:white}
+.opt-btn.wrong{border-color:var(--wrong);background:rgba(255,77,106,0.1);color:var(--text);animation:shake 0.35s ease}
+.opt-btn.wrong .opt-letter{background:var(--wrong);color:white}
+.opt-btn.dimmed{opacity:0.32;cursor:default}
+.opt-letter{min-width:30px;height:30px;background:var(--bg4);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.78rem;flex-shrink:0;transition:background 0.18s,color 0.18s}
+.opt-text{flex:1;line-height:1.4}
+.opt-icon{margin-left:auto;font-size:1.1rem;flex-shrink:0}
+
+/* FEEDBACK */
+.feedback{margin-top:18px;padding:20px 22px;border-radius:16px;animation:slideDown 0.3s cubic-bezier(.22,1,.36,1)}
+.feedback.fb-correct{background:rgba(34,212,122,0.08);border:1px solid rgba(34,212,122,0.3)}
+.feedback.fb-wrong{background:rgba(255,77,106,0.08);border:1px solid rgba(255,77,106,0.25)}
+.feedback.fb-timeout{background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.3)}
+.fb-header{font-weight:600;font-size:1rem;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.fb-correct .fb-header{color:var(--correct)}
+.fb-wrong .fb-header{color:var(--wrong)}
+.fb-timeout .fb-header{color:var(--warn)}
+.fb-correct-ans{font-size:0.85rem;color:var(--text2);margin-bottom:8px;font-weight:300}
+.fb-correct-ans b{color:var(--correct)}
+.fb-expl{color:var(--text2);font-size:0.88rem;line-height:1.65;font-weight:300}
+.next-btn{margin-top:16px;background:linear-gradient(135deg,var(--accent),var(--accent3));color:white;border:none;padding:12px 28px;border-radius:12px;font-family:'Sora',sans-serif;font-size:0.92rem;font-weight:600;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:8px}
+.next-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(124,106,255,0.45)}
+
+/* ============ RESULTS SCREEN ============ */
+#results-screen{}
+.results-hero{text-align:center;padding:30px 0 24px}
+.grade-ring{width:110px;height:110px;margin:0 auto 18px;position:relative}
+.grade-ring svg{width:100%;height:100%;animation:spinIn 0.7s cubic-bezier(.22,1,.36,1) 0.1s both}
+.grade-letter{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:2.6rem;font-weight:700}
+.results-score{font-family:'Cormorant Garamond',serif;font-size:3rem;font-weight:700;line-height:1}
+.results-pct{font-size:1.3rem;font-weight:600;margin-top:4px}
+.results-meta{color:var(--text2);margin-top:8px;font-size:0.85rem;font-weight:300}
+
+.r-section{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:24px;margin-top:18px;box-shadow:var(--shadow)}
+.r-section-title{font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:600;margin-bottom:18px;display:flex;align-items:center;gap:8px}
+
+.topic-bar{margin-bottom:14px}
+.topic-bar-hd{display:flex;justify-content:space-between;align-items:baseline;font-size:0.82rem;margin-bottom:6px}
+.topic-name{color:var(--text);font-weight:500;max-width:70%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topic-acc{font-weight:600}
+.topic-track{height:7px;background:var(--bg4);border-radius:4px;overflow:hidden}
+.topic-fill{height:100%;border-radius:4px;animation:barFill 0.8s cubic-bezier(.22,1,.36,1) both}
+
+.weak-card{display:flex;gap:12px;padding:14px;background:rgba(255,77,106,0.07);border:1px solid rgba(255,77,106,0.2);border-radius:12px;margin-bottom:10px}
+.weak-icon{font-size:1.1rem;flex-shrink:0}
+.weak-name{font-weight:600;font-size:0.88rem;color:var(--text);line-height:1.3}
+.weak-detail{font-size:0.78rem;color:var(--text2);margin-top:3px;font-weight:300}
+
+.ch-rec{background:rgba(124,106,255,0.08);border:1px solid rgba(124,106,255,0.2);border-radius:10px;padding:12px 16px;margin-bottom:8px;font-size:0.88rem;color:var(--accent2);font-weight:500;display:flex;align-items:center;gap:8px}
+.ch-rec::before{content:'📌';flex-shrink:0}
+
+.hist-wrap{display:flex;gap:6px;align-items:flex-end;height:80px;padding-top:10px}
+.hist-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end}
+.hist-bar{width:100%;border-radius:4px 4px 0 0;min-height:3px;transition:height 0.6s cubic-bezier(.22,1,.36,1)}
+.hist-lbl{font-size:0.65rem;color:var(--text2);font-weight:400}
+
+.actions{display:flex;flex-direction:column;gap:10px;margin-top:22px}
+.act-btn{padding:16px;border-radius:14px;font-family:'Sora',sans-serif;font-size:0.95rem;font-weight:600;cursor:pointer;border:none;transition:all 0.22s;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+.act-btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent3));color:white}
+.act-btn.primary:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(124,106,255,0.5)}
+.act-btn.secondary{background:transparent;color:var(--accent2);border:2px solid var(--accent)}
+.act-btn.secondary:hover{background:rgba(124,106,255,0.1)}
+.act-btn.ghost{background:var(--bg3);color:var(--text2);border:1px solid var(--border)}
+.act-btn.ghost:hover{background:var(--bg4);color:var(--text)}
+
+/* THEME TOGGLE */
+.theme-toggle{position:fixed;top:16px;right:16px;z-index:100;background:var(--bg3);border:1px solid var(--border);width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.1rem;transition:all 0.2s;box-shadow:var(--shadow)}
+.theme-toggle:hover{transform:scale(1.1);border-color:var(--accent)}
+
+/* RESPONSIVE */
+@media(max-width:480px){
+  .hero-title{font-size:2.1rem}
+  .q-text{font-size:1.15rem}
+  .q-section-tag{display:none}
+  .seg-group{gap:7px}
+  .setup-card{padding:22px 18px}
+  .q-card{padding:22px 18px}
+}
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">🌙</button>
+
+<div id="app">
+
+  <!-- ========== SETUP SCREEN ========== -->
+  <div class="screen active" id="setup-screen">
+    <div class="setup-bg-orb"></div>
+    <div class="setup-bg-orb2"></div>
+
+    <div class="setup-hero">
+      <div class="hero-icon">🏛️</div>
+      <h1 class="hero-title">Philosophy &amp; Logic</h1>
+      <p class="hero-sub">GST 102 · GST 211 · Interactive Study Quiz</p>
+      <div class="hero-badge">📚 <span id="totalQCount">154</span> questions extracted from your notes</div>
+    </div>
+
+    <div class="stats-row" id="statsRow" style="display:none">
+      <div class="stat-chip" id="statSessions"></div>
+      <div class="stat-chip" id="statAvg"></div>
+      <div class="stat-chip" id="statBest"></div>
+    </div>
+
+    <div class="setup-card">
+      <div class="form-group">
+        <div class="form-label"><span>🔢</span> Number of Questions</div>
+        <div class="num-input-wrap">
+          <input type="number" class="num-input" id="numQ" placeholder="e.g. 20" min="1" max="154"/>
+        </div>
+        <p class="num-hint">Enter between <b>1</b> and <b id="maxHint">154</b> questions</p>
+      </div>
+
+      <div class="form-group">
+        <div class="form-label"><span>⏱</span> Timer Per Question</div>
+        <div class="seg-group" id="timerGroup">
+          <button class="seg-btn" data-val="15">15s</button>
+          <button class="seg-btn active" data-val="30">30s</button>
+          <button class="seg-btn" data-val="60">60s</button>
+        </div>
+      </div>
+
+      <button class="start-btn" id="startBtn" disabled>Begin Session →</button>
+    </div>
+  </div>
+
+  <!-- ========== QUIZ SCREEN ========== -->
+  <div class="screen" id="quiz-screen">
+    <div class="q-topbar">
+      <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      <div class="q-nav">
+        <div class="q-counter-wrap">
+          <div>
+            <div class="q-num" id="qNum">1</div>
+            <div class="q-total" id="qTotal">of 20</div>
+          </div>
+        </div>
+        <div class="q-section-tag" id="qSection">–</div>
+        <div class="timer-wrap">
+          <svg class="timer-svg" width="54" height="54" viewBox="0 0 54 54">
+            <circle class="timer-track" cx="27" cy="27" r="22"/>
+            <circle class="timer-ring" id="timerRing" cx="27" cy="27" r="22"
+              stroke="#7c6aff"
+              stroke-dasharray="138.23"
+              stroke-dashoffset="0"/>
+            <text class="timer-text" id="timerText" x="27" y="27">30</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="q-card" id="qCard">
+      <div class="q-chapter" id="qChapter">Chapter 1</div>
+      <p class="q-text" id="qText">Loading question…</p>
+      <div class="options" id="optionsWrap"></div>
+      <div id="feedbackWrap"></div>
+    </div>
+  </div>
+
+  <!-- ========== RESULTS SCREEN ========== -->
+  <div class="screen" id="results-screen">
+
+    <div class="results-hero">
+      <div class="grade-ring">
+        <svg viewBox="0 0 110 110">
+          <circle cx="55" cy="55" r="48" fill="none" stroke="var(--bg4)" stroke-width="6"/>
+          <circle id="gradeArc" cx="55" cy="55" r="48" fill="none" stroke-width="6"
+            stroke-linecap="round" stroke-dasharray="301.59"
+            style="transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset 1.2s cubic-bezier(.22,1,.36,1)"/>
+        </svg>
+        <div class="grade-letter" id="gradeLetter">A</div>
+      </div>
+      <div class="results-score" id="resultsScore">0/0</div>
+      <div class="results-pct" id="resultsPct">0%</div>
+      <div class="results-meta" id="resultsMeta">0m 0s · 30s/question</div>
+    </div>
+
+    <div class="r-section">
+      <div class="r-section-title">📊 Topic Breakdown</div>
+      <div id="topicBars"></div>
+    </div>
+
+    <div class="r-section" id="weakSection" style="display:none">
+      <div class="r-section-title">⚠️ Weak Topics <span style="font-size:.9rem;color:var(--text2);font-family:'Sora',sans-serif;font-weight:300">(below 70%)</span></div>
+      <div id="weakList"></div>
+      <div style="margin-top:18px">
+        <div style="font-size:.88rem;font-weight:600;color:var(--text2);margin-bottom:12px;text-transform:uppercase;letter-spacing:.07em">📖 Chapters to Re-read (Urgency Order)</div>
+        <div id="chapterRecs"></div>
+      </div>
+    </div>
+
+    <div class="r-section" id="histSection" style="display:none">
+      <div class="r-section-title">📈 Score History</div>
+      <div class="hist-wrap" id="histGraph"></div>
+    </div>
+
+    <div class="actions">
+      <button class="act-btn primary" id="restartBtn">🔄 New Session</button>
+      <button class="act-btn secondary" id="exportBtn">📄 Export PDF Report</button>
+      <button class="act-btn ghost" id="homeBtn">🏠 Back to Home</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+// QUESTION DATABASE
+// ============================================================
+const ALL_Q = [
+  {id:1,sec:"Nature & Definition of Philosophy",ch:"Chapter 1",q:"Philosophy is best described as",opts:["The study of living organisms and their environment","The most foundational discipline that explores the deepest aspects of reality","A branch of natural science focused on physical matter","The study of mathematical principles and their applications"],ans:1,exp:"Philosophy is the most foundational discipline — it examines the deepest aspects of reality, knowledge, value, and existence. It underlies all other disciplines."},
+  {id:2,sec:"Nature & Definition of Philosophy",ch:"Chapter 1",q:"The term 'first philosophy' refers to",opts:["The earliest written text ever discovered","Philosophy's role in examining assumptions underlying all fields of knowledge","A philosophy textbook written by Aristotle","The first chapter in any philosophy course"],ans:1,exp:"'First philosophy' refers to philosophy's foundational role — examining the assumptions that underlie all other fields of knowledge."},
+  {id:3,sec:"Nature & Definition of Philosophy",ch:"Chapter 1",q:"Which of the following questions is MOST characteristic of philosophy?",opts:["What is the boiling point of water?","How many planets are in the solar system?","What is the purpose of existence?","What is the chemical formula for glucose?"],ans:2,exp:"'What is the purpose of existence?' is a philosophical question about meaning — philosophy addresses deep questions of being, value, and reality that science cannot answer alone."},
+  {id:4,sec:"Nature & Definition of Philosophy",ch:"Chapter 1",q:"Bertrand Russell argued that philosophy is valuable because it",opts:["Produces material goods and technological innovations","Provides intellectual nourishment and encourages critical thinking","Replaces the need for science and religion","Focuses only on abstract reasoning with no relevance to life"],ans:1,exp:"Russell argued that philosophy nourishes the intellect and broadens perspective, freeing us from the prison of cultural assumptions."},
+  {id:5,sec:"Nature & Definition of Philosophy",ch:"Chapter 1",q:"According to Russell, what would human beings still need even if all physical problems were solved?",opts:["More advanced technology","Larger governments and armies","Philosophical insight for meaning and ethical direction","Greater material wealth"],ans:2,exp:"Russell believed that even material completeness leaves a void — humans still need philosophy for meaning, purpose, and ethical guidance."},
+  {id:6,sec:"Nature & Definition of Philosophy",ch:"Chapter 1",q:"The study of philosophy's history is important because it",opts:["Helps us memorize the names of dead philosophers","Enables us to engage philosophically and understand past societies","Replaces the need to study other academic subjects","Provides formulas for solving mathematical problems"],ans:1,exp:"Studying philosophical history enables us to engage philosophically with ideas and understand how past societies thought, lived, and reasoned."},
+  {id:7,sec:"Nature & Definition of Philosophy",ch:"Chapter 1",q:"Socrates demonstrated the role of philosophy in society by",opts:["Writing long books about science and politics","Questioning the assumptions of Athenian life to awaken critical thinking","Building schools and libraries in Athens","Conducting scientific experiments in his laboratory"],ans:1,exp:"Socrates used the dialectic method — questioning — to challenge unexamined assumptions of Athenian citizens and awaken critical self-reflection."},
+  {id:8,sec:"Nature & Definition of Philosophy",ch:"Chapter 1",q:"Nigerian philosopher B. Okolo argued that philosophy can help address",opts:["Rainfall patterns and agricultural planning","Tribalism, corruption, and religious extremism","Space exploration and satellite technology","Foreign exchange rates and economic policy"],ans:1,exp:"B. Okolo emphasized philosophy as a tool for social transformation in Nigeria — addressing moral and social problems like tribalism, corruption, and extremism."},
+  {id:9,sec:"Nature & Definition of Philosophy",ch:"Chapter 1",q:"According to Hobbes, what would life become without moral structures?",opts:["Orderly and prosperous","Chaotic and violent","Spiritually fulfilling","Scientifically advanced"],ans:1,exp:"Hobbes argued that without moral and social structures, life would be 'solitary, poor, nasty, brutish, and short' — essentially chaotic and violent."},
+  {id:10,sec:"Nature & Definition of Philosophy",ch:"Chapter 1",q:"Augustine compared a state without justice to",opts:["A school without teachers","A church without a priest","A gang of criminals","An army without weapons"],ans:2,exp:"Augustine famously compared an unjust state to a gang of robbers — without justice, political authority loses its legitimacy."},
+  {id:11,sec:"Nature & Definition of Philosophy",ch:"Chapter 1",q:"The Socratic maxim 'The unexamined life is not worth living' means",opts:["People should avoid risks and live safely","A life without philosophical reflection lacks true meaning","Only Socrates' way of life is worth following","Academic study guarantees a meaningful life"],ans:1,exp:"This maxim means a life lived without critical self-examination — questioning one's values, assumptions, and actions — lacks genuine meaning."},
+  {id:12,sec:"Nature & Definition of Philosophy",ch:"Chapter 1",q:"Which of the following is NOT listed as a benefit of studying philosophy?",opts:["Clarifying reality through metaphysical inquiry","Promoting moral responsibility via ethics","Guaranteeing financial success and material wealth","Enhancing thought and dialogue through logical reasoning"],ans:2,exp:"Philosophy benefits include metaphysical clarity, ethical guidance, and logical skill. It does NOT guarantee financial or material success."},
+  {id:13,sec:"Nature & Definition of Philosophy",ch:"Chapter 1",q:"Philosophy enhances our ability to think clearly primarily through its focus on",opts:["Memorization of facts and figures","Logical clarity and coherence","Emotional intelligence and artistic expression","Physical experimentation and data collection"],ans:1,exp:"Philosophy's emphasis on logic, argumentation, and coherent reasoning sharpens critical thinking and clarity of thought."},
+  {id:14,sec:"Nature & Definition of Philosophy",ch:"Chapter 1",q:"Russell noted that those unfamiliar with philosophy are often",opts:["Excellent critical thinkers","Trapped within their cultural assumptions","More creative than philosophers","Better at solving practical problems"],ans:1,exp:"Russell argued that without philosophical training, people become prisoners of their inherited cultural biases and assumptions."},
+  {id:15,sec:"Nature & Definition of Philosophy",ch:"Chapter 1",q:"Which philosopher is credited with the statement 'I think, therefore I am'?",opts:["Plato","Aristotle","René Descartes","Immanuel Kant"],ans:2,exp:"René Descartes coined 'Cogito, ergo sum' as the one indubitable truth after applying his method of systematic doubt."},
+  {id:16,sec:"Epistemology",ch:"Chapter 2/3",q:"Epistemology is derived from the Greek words",opts:["Ethos and logos","Episteme and logos","Epis and telos","Eidos and nomos"],ans:1,exp:"Epistemology comes from 'episteme' (knowledge) and 'logos' (theory/discourse) — it is literally the theory of knowledge."},
+  {id:17,sec:"Epistemology",ch:"Chapter 2/3",q:"The philosophical examination of what it means to know is called",opts:["Ontology","Axiology","Epistemology","Cosmology"],ans:2,exp:"Epistemology is the branch of philosophy that studies knowledge — its nature, sources, scope, and limits."},
+  {id:18,sec:"Epistemology",ch:"Chapter 2/3",q:"A widely accepted definition of knowledge is",opts:["Any information found in books","Justified true belief","Whatever a person sincerely believes","Information verified by a government authority"],ans:1,exp:"The classical definition of knowledge, going back to Plato, is 'justified true belief' — a belief that is both true and backed by good reason."},
+  {id:19,sec:"Epistemology",ch:"Chapter 2/3",q:"For a belief to qualify as knowledge it must be all of the following EXCEPT",opts:["Factually accurate","Sincerely held","Supported by good reason","Endorsed by the majority"],ans:3,exp:"Knowledge requires truth, genuine belief, and justification. Majority endorsement is irrelevant — popular opinion can be wrong."},
+  {id:20,sec:"Epistemology",ch:"Chapter 2/3",q:"Which of the following is a source of knowledge that stores past experiences?",opts:["Intuition","Revelation","Memory","Authority"],ans:2,exp:"Memory is the cognitive faculty that stores and retrieves past experiences, serving as a key source of knowledge."},
+  {id:21,sec:"Epistemology",ch:"Chapter 2/3",q:"Intuition as a source of knowledge is best described as",opts:["Knowledge derived from sacred texts","Immediate awareness without deliberate reasoning","Information obtained from credible experts","Data collected through scientific experiments"],ans:1,exp:"Intuition is immediate, non-inferential awareness — knowing something directly without step-by-step reasoning."},
+  {id:22,sec:"Epistemology",ch:"Chapter 2/3",q:"Authority as a source of knowledge refers to",opts:["Knowledge gained from democratic voting","Knowledge obtained from experts or trusted traditions","Knowledge derived through personal emotional feelings","Knowledge obtained purely through logical deduction"],ans:1,exp:"Authority as a source of knowledge involves accepting claims from recognized experts or established traditions as reliable."},
+  {id:23,sec:"Epistemology",ch:"Chapter 2/3",q:"Revelation as a source of knowledge is most associated with",opts:["Scientific experimentation","Democratic decision-making","Divine communication accepted on faith","Conclusions drawn from statistical analysis"],ans:2,exp:"Revelation refers to knowledge disclosed by a divine or supernatural source, accepted through faith rather than empirical investigation."},
+  {id:24,sec:"Epistemology",ch:"Chapter 2/3",q:"Skepticism in epistemology is the view that",opts:["All knowledge is divinely inspired","The possibility of knowledge is doubtful","Knowledge can only be obtained through the senses","Science is the only valid source of knowledge"],ans:1,exp:"Epistemological skepticism questions whether genuine knowledge is possible at all, doubting our ability to justify our beliefs with certainty."},
+  {id:25,sec:"Epistemology",ch:"Chapter 2/3",q:"Descartes used the method of doubt to arrive at",opts:["'The greatest good for the greatest number'","'I think, therefore I am'","'Know thyself'","'Beauty is in the eye of the beholder'"],ans:1,exp:"By doubting everything he could, Descartes found one indubitable fact: that he was thinking — and therefore must exist."},
+  {id:26,sec:"Epistemology",ch:"Chapter 2/3",q:"Foundationalism holds that knowledge is built on",opts:["Agreements reached through social consensus","Basic, self-evident truths that need no further justification","The coherence of beliefs within a larger system","The reliability of the method used to form beliefs"],ans:1,exp:"Foundationalism posits that knowledge rests on basic, self-evident or incorrigible foundational beliefs from which other knowledge is derived."},
+  {id:27,sec:"Epistemology",ch:"Chapter 2/3",q:"Coherentism as a theory of justification holds that",opts:["Beliefs are justified if they cohere with a larger system of beliefs","All knowledge rests on self-evident foundational truths","Justification depends on divine revelation","Only scientific data constitutes genuine knowledge"],ans:0,exp:"Coherentism holds that a belief is justified not by a foundation but by how well it coheres with the rest of one's belief system."},
+  {id:28,sec:"Epistemology",ch:"Chapter 2/3",q:"Reliabilism bases justification on",opts:["The social status of the person making the claim","The trustworthiness of the method used to form the belief","How many people agree with the belief","The emotional conviction of the believer"],ans:1,exp:"Reliabilism holds that a belief is justified if it was formed through a reliable cognitive process — one that tends to produce true beliefs."},
+  {id:29,sec:"Epistemology",ch:"Chapter 2/3",q:"Which epistemological theory builds knowledge on basic, indubitable truths?",opts:["Coherentism","Reliabilism","Skepticism","Foundationalism"],ans:3,exp:"Foundationalism builds the structure of knowledge on indubitable, self-justifying beliefs — like Descartes' cogito."},
+  {id:30,sec:"Epistemology",ch:"Chapter 2/3",q:"Epistemology is considered the backbone of all intellectual disciplines because",opts:["It determines what governments should fund in research","It addresses the conditions under which knowledge claims are valid","It was the first branch of philosophy to be developed","It provides the rules for artistic and aesthetic judgment"],ans:1,exp:"Epistemology validates knowledge claims across all disciplines — every field of inquiry depends on epistemological standards of evidence and justification."},
+  {id:31,sec:"Ethics (Axiology)",ch:"Chapter 4",q:"Axiology is the philosophical study of",opts:["The nature of the physical universe","The nature of value and what makes things good or meaningful","The laws of logical reasoning","The structure of language and grammar"],ans:1,exp:"Axiology is the study of value — what things are good, meaningful, or worthwhile. It encompasses ethics (moral value) and aesthetics (aesthetic value)."},
+  {id:32,sec:"Ethics (Axiology)",ch:"Chapter 4",q:"Ethics is also known as",opts:["Metaphysics","Moral philosophy","Formal logic","Epistemology"],ans:1,exp:"Ethics is synonymous with moral philosophy — it studies principles, standards, and rules that guide human conduct."},
+  {id:33,sec:"Ethics (Axiology)",ch:"Chapter 4",q:"Normative ethics is concerned with",opts:["Describing how people actually behave morally","Proposing rules and standards for ethical conduct","Analysing the meaning of moral terms","Recording moral practices of different cultures"],ans:1,exp:"Normative ethics prescribes how people ought to behave — it proposes theories and principles for right action (e.g., utilitarianism, deontology)."},
+  {id:34,sec:"Ethics (Axiology)",ch:"Chapter 4",q:"Consequentialism judges the rightness of an action by",opts:["Whether it follows a universal moral duty","The social class of the person performing it","The outcomes or consequences it produces","The religious tradition from which it comes"],ans:2,exp:"Consequentialism evaluates actions solely by their outcomes — an action is right if it produces good consequences."},
+  {id:35,sec:"Ethics (Axiology)",ch:"Chapter 4",q:"Utilitarianism is a form of",opts:["Deontological ethics","Virtue ethics","Consequentialism","Descriptive ethics"],ans:2,exp:"Utilitarianism (Mill, Bentham) is a consequentialist theory — it holds that the right action maximizes happiness or utility for the greatest number."},
+  {id:36,sec:"Ethics (Axiology)",ch:"Chapter 4",q:"Kantian ethics (deontology) evaluates actions based on",opts:["Their consequences for society","Their adherence to universal moral duties","Their aesthetic appeal","Their popularity among the majority"],ans:1,exp:"Kant's deontology holds that actions are moral if they conform to universal duties — the categorical imperative, not consequences."},
+  {id:37,sec:"Ethics (Axiology)",ch:"Chapter 4",q:"Meta-ethics investigates",opts:["What moral terms mean and whether moral truths are universal or relative","Which actions are morally right or wrong","How different cultures practice morality","Which laws should be passed by governments"],ans:0,exp:"Meta-ethics examines the nature, meaning, and foundations of morality itself — are moral claims objective? What does 'good' mean?"},
+  {id:38,sec:"Ethics (Axiology)",ch:"Chapter 4",q:"Descriptive ethics is most closely associated with",opts:["Prescribing what people ought to do","Empirically observing how people actually behave morally","Developing universal moral laws","Applying logic to ethical arguments"],ans:1,exp:"Descriptive ethics observes and describes actual moral practices across cultures and societies — it is empirical, not prescriptive."},
+  {id:39,sec:"Ethics (Axiology)",ch:"Chapter 4",q:"Cognitivism in meta-ethics holds that moral claims are",opts:["Expressions of personal emotion only","Objective facts that can be true or false","Entirely relative to individual preference","Meaningful only within religious contexts"],ans:1,exp:"Cognitivism holds that moral statements are genuine propositions — they can be objectively true or false, not merely emotional expressions."},
+  {id:40,sec:"Ethics (Axiology)",ch:"Chapter 4",q:"Which correctly describes non-cognitivism in meta-ethics?",opts:["Moral statements are objective factual claims","Moral statements express emotions rather than factual truths","Morality is determined by the state","Moral knowledge is derived from sacred scriptures"],ans:1,exp:"Non-cognitivism (e.g., emotivism) holds that moral statements like 'murder is wrong' express emotional attitudes, not objective facts."},
+  {id:41,sec:"Ethics (Axiology)",ch:"Chapter 4",q:"The categorical imperative is associated with",opts:["John Stuart Mill","Immanuel Kant","Jeremy Bentham","David Hume"],ans:1,exp:"Kant's categorical imperative is the supreme principle of his moral philosophy: act only on principles you could will to be universal laws."},
+  {id:42,sec:"Ethics (Axiology)",ch:"Chapter 4",q:"'Act only according to that maxim by which you can at the same time will that it should become a universal law' is",opts:["The principle of utility","The categorical imperative","The golden mean","The social contract"],ans:1,exp:"This is Kant's categorical imperative — the test of moral action is whether its principle could be universalized without contradiction."},
+  {id:43,sec:"Ethics (Axiology)",ch:"Chapter 4",q:"Which ethical theory focuses on the character and virtues of the moral agent?",opts:["Consequentialism","Deontology","Virtue ethics","Relativism"],ans:2,exp:"Virtue ethics (Aristotle) focuses not on rules or outcomes but on the character of the moral agent — cultivating virtues like courage, honesty, and justice."},
+  {id:44,sec:"Aesthetics",ch:"Chapter 1/3",q:"Aesthetics is the branch of philosophy that studies",opts:["The nature of valid reasoning and argument","Art, beauty, and our emotional responses to creative expression","The fundamental structure of reality","The conditions under which beliefs are justified"],ans:1,exp:"Aesthetics is the philosophical study of beauty, art, and aesthetic experience — what makes something beautiful, and the role of art in human life."},
+  {id:45,sec:"Aesthetics",ch:"Chapter 1/3",q:"The question 'Is beauty objective or subjective?' is primarily a concern of",opts:["Logic","Epistemology","Aesthetics","Metaphysics"],ans:2,exp:"The debate between objective and subjective theories of beauty is a central problem in aesthetics."},
+  {id:46,sec:"Aesthetics",ch:"Chapter 1/3",q:"Those who argue that beauty is objective believe it is based on",opts:["The personal mood of the observer","Cultural traditions passed down through generations","Qualities such as harmony and symmetry","Whatever is most popular at a given time"],ans:2,exp:"Objectivists about beauty hold that it resides in properties of the object itself — harmony, proportion, symmetry — independent of the observer."},
+  {id:47,sec:"Aesthetics",ch:"Chapter 1/3",q:"'Beauty is in the eye of the beholder' represents which view?",opts:["Objective","Universal","Subjective","Empirical"],ans:2,exp:"This proverb expresses subjectivism about beauty — beauty is not in the object but in the perceiver's experience and judgment."},
+  {id:48,sec:"Aesthetics",ch:"Chapter 1/3",q:"Which of the following is NOT a question addressed by aesthetics?",opts:["What makes something beautiful?","Is art objective or subjective?","What is the boiling point of water?","What role does art play in society?"],ans:2,exp:"The boiling point of water is a scientific question, not a philosophical one. Aesthetics addresses beauty, art, and creative experience."},
+  {id:49,sec:"Logic",ch:"Chapter 8/9",q:"Logic is best defined as",opts:["The study of the physical laws of nature","The systematic study of valid thinking and argumentation","The philosophical investigation of value and meaning","The examination of the origin and nature of the universe"],ans:1,exp:"Logic is the branch of philosophy concerned with the principles of valid reasoning and sound argumentation."},
+  {id:50,sec:"Logic",ch:"Chapter 8/9",q:"Logic is described as 'normative' because it",opts:["Changes according to cultural norms","Prescribes rules for how reasoning should proceed","Describes the average thinking patterns of people","Focuses on the norms of social behaviour"],ans:1,exp:"Logic is normative — it sets standards for correct reasoning, not descriptions of how reasoning actually occurs."},
+  {id:51,sec:"Logic",ch:"Chapter 8/9",q:"Deductive reasoning is characterized by moving from",opts:["Specific observations to general conclusions","General principles to specific and necessary conclusions","Hypotheses to experimental verification","Emotional intuitions to rational conclusions"],ans:1,exp:"Deductive reasoning moves from general premises to a specific, logically necessary conclusion. If premises are true and form is valid, conclusion must be true."},
+  {id:52,sec:"Logic",ch:"Chapter 8/9",q:"Which is a correct example of deductive reasoning?",opts:["The sun rose every day; therefore it will rise tomorrow","All metals conduct electricity; copper is a metal; therefore copper conducts electricity","Most students pass exams; therefore this student will pass","It has rained in June before; therefore it will rain this June"],ans:1,exp:"This is a classic syllogism: universal premise → classification → necessary conclusion. If both premises are true, the conclusion must be true."},
+  {id:53,sec:"Logic",ch:"Chapter 8/9",q:"Inductive reasoning draws conclusions that are",opts:["Necessarily true if premises are true","Probabilistic rather than certain","Derived purely from logical definitions","Always confirmed by deductive proof"],ans:1,exp:"Inductive conclusions are probable, not certain — new evidence could always defeat them."},
+  {id:54,sec:"Logic",ch:"Chapter 8/9",q:"A valid argument is one in which",opts:["The premises are all factually true","The conclusion follows necessarily from the premises","The argument is widely accepted by experts","The conclusion agrees with common sense"],ans:1,exp:"Validity is about logical form, not factual truth. An argument is valid if the conclusion necessarily follows from the premises."},
+  {id:55,sec:"Logic",ch:"Chapter 8/9",q:"A sound argument must be",opts:["Both valid and have true premises","Valid with false premises only","Based on inductive evidence alone","Emotionally persuasive and logically consistent"],ans:0,exp:"Soundness requires both validity (correct logical form) AND true premises. Validity alone is not enough for a sound argument."},
+  {id:56,sec:"Logic",ch:"Chapter 8/9",q:"An ad hominem fallacy involves",opts:["Attacking the person making an argument rather than the argument itself","Drawing a conclusion too hastily from limited evidence","Assuming two things are related because they occurred together","Using circular reasoning to support a claim"],ans:0,exp:"Ad hominem means 'against the person' — it attacks the arguer's character instead of engaging with their actual argument."},
+  {id:57,sec:"Logic",ch:"Chapter 8/9",q:"Modus ponens states",opts:["If P then Q; Q is true; therefore P is true","If P then Q; P is true; therefore Q is true","P is false; therefore Q is true","If P then Q; Q is false; therefore P is false"],ans:1,exp:"Modus ponens: If P→Q and P is true, then Q must be true. It is one of the most fundamental valid argument forms."},
+  {id:58,sec:"Logic",ch:"Chapter 8/9",q:"Formal logic is distinguished from informal logic in that formal logic",opts:["Deals with everyday language and rhetoric","Uses symbolic notation to analyse argument structure","Is concerned only with ethical arguments","Focuses on the psychology of persuasion"],ans:1,exp:"Formal (symbolic) logic uses symbols and mathematical notation to analyse argument structure abstractly."},
+  {id:59,sec:"Metaphysics",ch:"Chapter 1/3",q:"Metaphysics is the branch of philosophy that investigates",opts:["The rules of valid logical reasoning","The nature of reality, existence, and the fundamental structure of the world","The sources and limits of human knowledge","The moral principles that guide human conduct"],ans:1,exp:"Metaphysics investigates the most fundamental questions about reality — what exists, what kinds of things there are, and what reality's basic structure is."},
+  {id:60,sec:"Metaphysics",ch:"Chapter 1/3",q:"Ontology is best described as",opts:["The study of the origin and nature of the universe","The study of being and the categories of entities that exist","The investigation of the existence and nature of God","The examination of the moral basis of human action"],ans:1,exp:"Ontology (from Greek 'ontos' = being) studies being as being — what kinds of entities exist and what it means to exist."},
+  {id:61,sec:"Metaphysics",ch:"Chapter 1/3",q:"The mind-body problem in metaphysics asks",opts:["Whether the mind and body are the same or distinct entities","How the brain processes emotional experiences","Whether animals have consciousness","What chemicals are responsible for human thought"],ans:0,exp:"The mind-body problem asks about the relationship between mental and physical reality — are they one substance (monism) or two (dualism)?"},
+  {id:62,sec:"Metaphysics",ch:"Chapter 1/3",q:"Dualism in metaphysics is the view that",opts:["Reality consists of only one fundamental kind of substance","Mind and body are distinct and separate kinds of entities","All physical objects are ultimately mental in nature","God and the world are identical"],ans:1,exp:"Dualism (most famously Descartes') holds that mind and body are fundamentally different substances — thinking substance and extended matter."},
+  {id:63,sec:"Metaphysics",ch:"Chapter 1/3",q:"Materialism as a metaphysical position holds that",opts:["Material wealth is the highest good in life","Only physical matter ultimately exists","The mind is superior to the body","Abstract entities like numbers are more real than physical objects"],ans:1,exp:"Materialism (or physicalism) holds that everything that exists is physical — mind, consciousness, and all phenomena are ultimately material."},
+  {id:64,sec:"Metaphysics",ch:"Chapter 1/3",q:"Which philosopher is most famously associated with mind-body dualism?",opts:["Aristotle","John Locke","René Descartes","David Hume"],ans:2,exp:"Descartes is the canonical dualist — he argued that mind (thinking substance) and body (extended substance) are entirely distinct."},
+  {id:65,sec:"Metaphysics",ch:"Chapter 1/3",q:"Idealism as a metaphysical position holds that",opts:["Ideas and mind are the fundamental basis of reality","Only matter and physical processes exist","God alone is the ultimate reality","Human perception is always accurate"],ans:0,exp:"Idealism (e.g., Berkeley, Hegel) holds that reality is fundamentally mental — the physical world depends on mind for its existence."},
+  {id:66,sec:"Key Philosophers",ch:"Chapter 2",q:"Socrates is best known philosophically for",opts:["Writing extensive books on logic and metaphysics","Using questioning to challenge unexamined assumptions","Developing the theory of forms","Founding the Stoic school of philosophy"],ans:1,exp:"Socrates wrote nothing — his legacy is the Socratic method of questioning (elenchus) to expose unexamined beliefs and stimulate self-knowledge."},
+  {id:67,sec:"Key Philosophers",ch:"Chapter 2",q:"Plato is most associated with which philosophical doctrine?",opts:["The theory of forms and the immortality of the soul","The principle of utility in ethics","The method of systematic doubt","The categorical imperative"],ans:0,exp:"Plato's theory of Forms holds that abstract, perfect Forms are the true reality, and the physical world is merely an imperfect shadow."},
+  {id:68,sec:"Key Philosophers",ch:"Chapter 2",q:"Aristotle's most significant contribution to logic was",opts:["The development of symbolic logic using algebraic notation","The systematization of the syllogism as deductive argument","The development of inductive probability theory","The formulation of the categorical imperative"],ans:1,exp:"Aristotle systematized deductive logic through the syllogism — three-proposition arguments — founding traditional/formal logic."},
+  {id:69,sec:"Key Philosophers",ch:"Chapter 2",q:"John Stuart Mill is most associated with",opts:["Deontological ethics and the categorical imperative","Utilitarianism and the principle of utility","Virtue ethics and character development","Existentialism and the absurd"],ans:1,exp:"Mill is the most famous utilitarian — he developed and defended the principle of utility as the foundation of ethics."},
+  {id:70,sec:"Key Philosophers",ch:"Chapter 2",q:"Which correctly pairs a philosopher with their key idea?",opts:["Kant – Utilitarianism; Mill – Categorical Imperative","Descartes – Cogito ergo sum; Kant – Categorical Imperative","Plato – Empiricism; Aristotle – Theory of Forms","Russell – Skepticism; Socrates – Reliabilism"],ans:1,exp:"Descartes coined 'Cogito ergo sum' and Kant formulated the categorical imperative. The other pairings are reversed or incorrect."},
+  {id:71,sec:"GST Chapter 1",ch:"Chapter 1",q:"Etymologically, philosophy is derived from which two Greek words?",opts:["Philos and Logos","Philos and Sophia","Episteme and Sophia","Meta and Physika"],ans:1,exp:"Philosophy comes from 'philos' (love) and 'sophia' (wisdom) — literally 'love of wisdom.'"},
+  {id:72,sec:"GST Chapter 1",ch:"Chapter 1",q:"What does the Greek word 'Philos' mean?",opts:["Wisdom","Truth","Love","Knowledge"],ans:2,exp:"Philos means love. Combined with sophia (wisdom), it gives us philosophy — the love of wisdom."},
+  {id:73,sec:"GST Chapter 1",ch:"Chapter 1",q:"Western philosophy originated from",opts:["Rome","Egypt","Greece","Persia"],ans:2,exp:"Western philosophy originated in ancient Greece, with Thales of Miletus often cited as the first Western philosopher."},
+  {id:74,sec:"GST Chapter 1",ch:"Chapter 1",q:"Some people see philosophy as occultism because of which branch?",opts:["Epistemology","Logic","Metaphysics","Ethics"],ans:2,exp:"Metaphysics explores supernatural and ultimate questions about reality, which some people confuse with mysticism or occultism."},
+  {id:75,sec:"GST Chapter 1",ch:"Chapter 1",q:"According to the notes, all philosophy should eventually lead to what?",opts:["Metaphysics","Logic","Ethics","Epistemology"],ans:2,exp:"The notes state that all philosophy should lead to Ethics — ethics becomes the end point and destination of philosophical knowledge."},
+  {id:76,sec:"GST Chapter 1",ch:"Chapter 1",q:"How many main branches of philosophy are there?",opts:["Two","Three","Four","Five"],ans:2,exp:"The four main branches of philosophy are Metaphysics, Epistemology, Logic, and Ethics."},
+  {id:77,sec:"GST Chapter 1",ch:"Chapter 1",q:"Who compiled Aristotle's works and coined the term 'metaphysics'?",opts:["Plato","Socrates","Andronicus of Rhodes","St. Augustine"],ans:2,exp:"Andronicus of Rhodes edited Aristotle's works and placed certain treatises 'after the Physics' — thus naming them 'metaphysics.'"},
+  {id:78,sec:"GST Chapter 1",ch:"Chapter 1",q:"Which philosopher accused others of interpreting the world without changing it?",opts:["Aristotle","Plato","Karl Marx","Descartes"],ans:2,exp:"Karl Marx famously wrote: 'The philosophers have only interpreted the world; the point is to change it' (Theses on Feuerbach)."},
+  {id:79,sec:"GST Chapter 2",ch:"Chapter 2",q:"Western philosophy can be divided into how many periods?",opts:["Two","Three","Four","Five"],ans:2,exp:"Western philosophy is divided into four main periods: Ancient (Greek), Medieval, Modern, and Contemporary."},
+  {id:80,sec:"GST Chapter 2",ch:"Chapter 2",q:"Philosophy among the Greeks emerged out of",opts:["Mathematics and science","Religion and myth","Politics and law","Art and poetry"],ans:1,exp:"Greek philosophy emerged as a rational alternative to religious myth and tradition — early philosophers sought natural rather than supernatural explanations."},
+  {id:81,sec:"GST Chapter 2",ch:"Chapter 2",q:"Who were the pre-Socratic philosophers?",opts:["Plato, Aristotle, Socrates","Thales, Anaximander, Anaximenes","Augustine, Aquinas, Anselm","Descartes, Locke, Hume"],ans:1,exp:"Thales, Anaximander, and Anaximenes of Miletus are the canonical pre-Socratics — they sought the fundamental material principle of the universe."},
+  {id:82,sec:"GST Chapter 2",ch:"Chapter 2",q:"Socrates is referred to as",opts:["The founder of empiricism","The father of philosophy","The first logician","The first metaphysician"],ans:1,exp:"Socrates is widely called the father of philosophy, particularly Western moral philosophy and the philosophical method of inquiry."},
+  {id:83,sec:"GST Chapter 2",ch:"Chapter 2",q:"Plato founded which school?",opts:["The Lyceum","The Academy","The Stoa","The Garden"],ans:1,exp:"Plato founded the Academy in Athens around 388 BC — one of the first institutions of higher learning in the Western world."},
+  {id:84,sec:"GST Chapter 2",ch:"Chapter 2",q:"Plato said man was made up of a soul divided into three parts:",opts:["Mind, body, spirit","Reason, emotions and appetites","Intellect, will and memory","Form, matter and essence"],ans:1,exp:"Plato divided the soul into reason (rational part), emotions/spirit (thymos), and appetites (desires)."},
+  {id:85,sec:"GST Chapter 2",ch:"Chapter 2",q:"Aristotle was born at",opts:["Athens in Southern Greece","Miletus in Asia Minor","Stagira in Northern Greece","Corinth in Central Greece"],ans:2,exp:"Aristotle was born in Stagira, a town in northern Greece, in 384 BC."},
+  {id:86,sec:"GST Chapter 2",ch:"Chapter 2",q:"Aristotle opened a school in Athens called the",opts:["Academy","Lyceum","Stoa","Garden"],ans:1,exp:"Aristotle founded the Lyceum in Athens — his school where he taught while walking (peripatetic method)."},
+  {id:87,sec:"GST Chapter 2",ch:"Chapter 2",q:"Aristotle believed in what kind of knowledge?",opts:["Rational speculations","Innate ideas","Empirical knowledge","Divine revelation"],ans:2,exp:"Unlike Plato, Aristotle was an empiricist — he believed knowledge comes from sense experience and observation of the world."},
+  {id:88,sec:"GST Chapter 2",ch:"Chapter 2",q:"St. Augustine was made bishop of which city?",opts:["Rome","Alexandria","Carthage","Hippo"],ans:3,exp:"St. Augustine was made Bishop of Hippo in 396 AD — his most famous works include Confessions and The City of God."},
+  {id:89,sec:"GST Chapter 2",ch:"Chapter 2",q:"St. Augustine said there are two cities. What are they?",opts:["The city of Athens and the city of Rome","The city of God and the city of man","The earthly city and the celestial city","The city of reason and the city of faith"],ans:1,exp:"Augustine's 'The City of God' distinguishes the City of God (those who love God) from the City of Man (those who love worldly things)."},
+  {id:90,sec:"GST Chapter 2",ch:"Chapter 2",q:"St. Thomas Aquinas was often called the 'Medieval Aristotle' because",opts:["He lived in Aristotle's era","He was greatly influenced by Aristotle's works","He copied Aristotle's writing style","He translated all of Aristotle into Latin"],ans:1,exp:"Aquinas synthesized Aristotelian philosophy with Christian theology — his dependence on Aristotle earned him the title 'Medieval Aristotle.'"},
+  {id:91,sec:"GST Chapter 2",ch:"Chapter 2",q:"For Aquinas, morality is a matter of",opts:["Divine command alone","Reason","Social convention","Emotion"],ans:1,exp:"Aquinas held that morality is grounded in reason — natural moral law is discernible through rational reflection on human nature."},
+  {id:92,sec:"GST Chapter 2",ch:"Chapter 2",q:"René Descartes is considered to be",opts:["The father of philosophy","The founder of modern philosophy","The first empiricist","The founder of scholasticism"],ans:1,exp:"Descartes is considered the founder of modern philosophy — his method of systematic doubt and the cogito mark a radical break from medieval thought."},
+  {id:93,sec:"GST Chapter 2",ch:"Chapter 2",q:"Descartes held that the ultimate source of human knowledge is",opts:["Sense experience","Divine revelation","Reason","Authority"],ans:2,exp:"Descartes was a rationalist — he held that reason (not the senses) is the ultimate and most reliable source of knowledge."},
+  {id:94,sec:"GST Chapter 2",ch:"Chapter 2",q:"John Locke is regarded as the founder of",opts:["Rationalism","Empiricism","Existentialism","Idealism"],ans:1,exp:"John Locke is considered the founder of empiricism — the view that all knowledge ultimately derives from sense experience."},
+  {id:95,sec:"GST Chapter 2",ch:"Chapter 2",q:"'Tabula Rasa' means",opts:["The mind is active","The mind is blank","The mind is rational","The mind is divine"],ans:1,exp:"Locke's 'tabula rasa' (blank slate) means the mind at birth is empty — all knowledge comes from experience written on this blank slate."},
+  {id:96,sec:"GST Chapter 2",ch:"Chapter 2",q:"Which is an existentialist philosopher of the contemporary period?",opts:["René Descartes","John Locke","Friedrich Nietzsche","Thomas Aquinas"],ans:2,exp:"Friedrich Nietzsche is a key existentialist philosopher, known for his radical individualism and critique of conventional morality."},
+  {id:97,sec:"Applied Ethics",ch:"Chapter 4",q:"Ethics is divided into two main parts:",opts:["Axiology and aesthetics","Normative and meta","Formal and informal","Descriptive and prescriptive"],ans:1,exp:"Ethics is divided into normative ethics (what we should do) and meta-ethics (the nature and foundations of moral claims)."},
+  {id:98,sec:"Applied Ethics",ch:"Chapter 4",q:"Which field studies the ethical implications of advances in genetics and biotechnology?",opts:["Political ethics","Bioethics","Environmental ethics","Business ethics"],ans:1,exp:"Bioethics is the applied ethics of biological sciences and medicine — it addresses issues like genetic engineering, cloning, and end-of-life care."},
+  {id:99,sec:"Applied Ethics",ch:"Chapter 4",q:"Euthanasia is derived from the Greek word meaning",opts:["Natural death","Merciful death","Good death","Peaceful end"],ans:2,exp:"Euthanasia comes from 'eu' (good) + 'thanatos' (death) — literally 'good death,' referring to assisted dying to end suffering."},
+  {id:100,sec:"Applied Ethics",ch:"Chapter 4",q:"Passive Euthanasia involves",opts:["Actively administering a lethal substance","Withholding or withdrawing treatment and letting the patient die","Requesting termination of one's own life","Non-consensual termination of life"],ans:1,exp:"Passive euthanasia involves withdrawing life-sustaining treatment and allowing natural death, contrasted with active euthanasia."},
+  {id:101,sec:"Applied Ethics",ch:"Chapter 4",q:"Those who claim that a woman has the right to choose to terminate or continue a pregnancy are called",opts:["Prolife advocates","Prochoice advocates","Consequentialists","Deontologists"],ans:1,exp:"Prochoice advocates hold that bodily autonomy gives the pregnant person the right to decide whether to continue the pregnancy."},
+  {id:102,sec:"Applied Ethics",ch:"Chapter 4",q:"The Prolife position on abortion holds that",opts:["Abortion is always permissible","Abortion can only be allowed when the mother's life is threatened","Abortion is a private decision","Abortion has no moral significance"],ans:1,exp:"The prolife position holds that human life begins at conception and abortion is generally wrong, with very limited exceptions."},
+  {id:103,sec:"African Philosophy",ch:"Chapter 5",q:"Who formulated the four trends of African Philosophy?",opts:["Kwame Nkrumah","B. Okolo","Odera Oruka Henry","Paulin Hountonji"],ans:2,exp:"Henry Odera Oruka identified four trends in African philosophy: ethno-philosophy, philosophic sagacity, professional philosophy, and nationalist-ideological."},
+  {id:104,sec:"African Philosophy",ch:"Chapter 5",q:"What are the four trends in African Philosophy?",opts:["Ethno-philosophy, Logic, Metaphysics, Ethics","Ethno-philosophy, Philosophic Sagacity, Professional Philosophy, Nationalist Ideological","Ancient, Medieval, Modern, Contemporary","Rationalism, Empiricism, Existentialism, Pragmatism"],ans:1,exp:"Oruka's four trends: Ethno-philosophy (folk wisdom), Philosophic Sagacity (sage wisdom), Professional Philosophy (academic), and Nationalist-Ideological."},
+  {id:105,sec:"African Philosophy",ch:"Chapter 5",q:"Who is the greatest critic of Ethno-philosophy?",opts:["Kwame Nkrumah","B. Okolo","Odera Oruka","Paulin Hountonji"],ans:3,exp:"Paulin Hountonji of Benin is the most prominent critic of ethno-philosophy — he argued it conflates collective worldview with genuine philosophy."},
+  {id:106,sec:"African Philosophy",ch:"Chapter 5",q:"Kwame Nkrumah, Julius Nyerere, and Obafemi Awolowo belong to which trend?",opts:["Ethno-philosophy","Philosophic Sagacity","Professional Philosophy","Nationalist Ideological"],ans:3,exp:"These leaders engaged philosophy for political liberation and national building — they represent the nationalist-ideological trend."},
+  {id:107,sec:"Logic & Fallacies",ch:"Chapter 8/9",q:"In deductive arguments, we reason from",opts:["Particular to general","General statements to particular statements","Observation to hypothesis","Emotion to reason"],ans:1,exp:"Deductive reasoning moves from general premises to particular conclusions — the conclusion is necessarily contained in the premises."},
+  {id:108,sec:"Logic & Fallacies",ch:"Chapter 8/9",q:"Inductive argument can only be evaluated as",opts:["Valid or invalid","True or false","Strong or weak","Sound or unsound"],ans:2,exp:"Inductive arguments are evaluated as strong or weak (not valid/invalid) — validity is reserved for deductive arguments."},
+  {id:109,sec:"Logic & Fallacies",ch:"Chapter 8/9",q:"The principle that no statement can be both true and false at the same time is called",opts:["The principle of excluded middle","The principle of non-contradiction","The principle of identity","The principle of sufficient reason"],ans:1,exp:"The principle of non-contradiction states that a proposition cannot be both true and false simultaneously — a foundational law of logic."},
+  {id:110,sec:"Logic & Fallacies",ch:"Chapter 8/9",q:"The principle that a statement is either true or false (no middle ground) is called",opts:["The principle of non-contradiction","The principle of identity","The principle of excluded middle","The principle of sufficient reason"],ans:2,exp:"The principle of excluded middle: every proposition is either true or false — there is no third option (in classical logic)."},
+  {id:111,sec:"Logic & Fallacies",ch:"Chapter 8/9",q:"Who was the first to study fallacies systematically?",opts:["Plato","Socrates","Aristotle","Descartes"],ans:2,exp:"Aristotle first systematically catalogued logical fallacies in 'Sophistical Refutations,' identifying both formal and informal fallacies."},
+  {id:112,sec:"Logic & Fallacies",ch:"Chapter 8/9",q:"When you believe cheap things are always inferior, you are committing which fallacy?",opts:["Ad hominem","Bandwagon","Appeal to money","Hasty generalization"],ans:2,exp:"Appeal to money (or appeal to wealth) is the fallacy of assuming higher price equals better quality or cheaper equals inferior."},
+  {id:113,sec:"Logic & Fallacies",ch:"Chapter 8/9",q:"If you support a belief simply because the majority holds it, you commit which fallacy?",opts:["Ad hominem","Bandwagon fallacy","Hasty generalization","Scapegoating"],ans:1,exp:"The bandwagon fallacy (argumentum ad populum) assumes something is true or good because many people believe or do it."},
+  {id:114,sec:"Logic & Fallacies",ch:"Chapter 8/9",q:"'I met three Americans and they were nice; therefore all Americans are nice.' This is",opts:["Ad hominem","Bandwagon","Hasty generalization","Scapegoating"],ans:2,exp:"Hasty generalization draws a broad conclusion from too few examples — three people cannot represent 330+ million Americans."},
+  {id:115,sec:"Logic & Fallacies",ch:"Chapter 8/9",q:"An appeal to force is also called",opts:["Argumentum ad misericordiam","Argumentum ad baculum","Argumentum ad ignorantiam","Argumentum ad hominem"],ans:1,exp:"Argumentum ad baculum ('appeal to the stick') uses threat of force or harm to coerce agreement rather than reason."},
+  {id:116,sec:"Propositions",ch:"Chapter 10",q:"The three structures of a categorical proposition are",opts:["Subject, verb, object","Subject term, predicate term, and copula","Premise, inference, conclusion","Quantifier, qualifier, conclusion"],ans:1,exp:"A categorical proposition has a subject term (what we're talking about), a copula (linking verb), and a predicate term (what we say about the subject)."},
+  {id:117,sec:"Propositions",ch:"Chapter 10",q:"The three most commonly used quantifiers in logic are",opts:["Some, many, most","'All', 'Some', and 'No'","One, few, many","All, most, some"],ans:1,exp:"In categorical logic, 'All,' 'Some,' and 'No' are the standard quantifiers that determine the scope of a proposition."},
+  {id:118,sec:"Propositions",ch:"Chapter 10",q:"Universal quantity in a proposition means",opts:["Only some entities are covered","All entities covered by the subject term are affirmed or denied","The statement applies to an individual","The statement is emotionally strong"],ans:1,exp:"Universal propositions ('All S are P' or 'No S are P') cover all members of the subject class, affirming or denying something of all of them."},
+  {id:119,sec:"Propositions",ch:"Chapter 10",q:"Universal propositions are also called",opts:["Subalterns","Superalterns","Contraries","Contradictories"],ans:1,exp:"Universal propositions are the superalterns — they stand 'above' the particular (subaltern) propositions in the traditional square of opposition."},
+  {id:120,sec:"Nature & Definition of Philosophy",ch:"Chapter 1",q:"The highest academic degree in any field is called",opts:["Master of Science","Bachelor of Arts","Doctor of Philosophy (PhD)","Diploma in Education"],ans:2,exp:"The Doctor of Philosophy (PhD) is the highest academic degree across virtually all fields of study, reflecting philosophy's foundational status."},
+  // Additional stretch questions
+  {id:121,sec:"Ethics (Axiology)",ch:"Chapter 4",q:"Descriptive ethics is used primarily by",opts:["Logicians and mathematicians","Anthropologists and sociologists","Lawyers and judges","Theologians and priests"],ans:1,exp:"Descriptive ethics is an empirical enterprise — anthropologists and sociologists use it to study and compare actual moral practices across cultures."},
+  {id:122,sec:"Metaphysics",ch:"Chapter 1/3",q:"Cosmology as a subfield of metaphysics is concerned with",opts:["The study of biological organisms","The philosophical study of the origin and nature of the universe","The investigation of mathematical structures","The analysis of human cognitive processes"],ans:1,exp:"Cosmology in metaphysics examines the universe as a whole — its origin, structure, and fundamental nature."},
+  {id:123,sec:"Metaphysics",ch:"Chapter 1/3",q:"The problem of personal identity concerns",opts:["How to improve self-esteem","What makes a person the same individual over time despite change","The psychological effects of social media","How governments issue identification documents"],ans:1,exp:"Personal identity asks what makes you the same person you were 10 years ago, despite continuous physical and psychological change."},
+  {id:124,sec:"Metaphysics",ch:"Chapter 1/3",q:"The debate between free will and determinism concerns",opts:["Whether humans can predict the future","Whether human actions are freely chosen or causally determined","Whether technology can replace human decision-making","Whether fate is controlled by divine beings"],ans:1,exp:"Free will vs. determinism debates whether our actions are genuinely free choices or the inevitable result of prior causes."},
+  {id:125,sec:"Aesthetics",ch:"Chapter 1/3",q:"Aesthetics and ethics overlap most clearly when we ask",opts:["Whether beautiful things are always cheap","Whether art can be morally objectionable yet aesthetically valuable","Why science produces better knowledge than art","How to calculate the market value of a painting"],ans:1,exp:"The overlap between aesthetics and ethics appears in questions like: can art be morally wrong yet aesthetically great?"},
+  {id:126,sec:"Key Philosophers",ch:"Chapter 2",q:"Which of the following best describes the Socratic method?",opts:["Writing systematic treatises on philosophical topics","Conducting experiments to test philosophical hypotheses","Using dialogue and questioning to arrive at truth","Memorizing the works of earlier philosophers"],ans:2,exp:"The Socratic (dialectic) method uses dialogue and probing questions to examine beliefs, expose contradictions, and approach truth."},
+  {id:127,sec:"Key Philosophers",ch:"Chapter 2",q:"Hobbes and Augustine share the view that",opts:["Morality and justice are essential to a well-ordered society","Philosophy should be abandoned in favour of theology","Knowledge is impossible without divine revelation","Art is more important than ethics in human life"],ans:0,exp:"Both Hobbes and Augustine agreed that moral and just structures are necessary for a functioning, orderly society."},
+  {id:128,sec:"GST Chapter 2",ch:"Chapter 2",q:"The word 'Metaphysics' literally means",opts:["Beyond nature","Before science","After physics","Over reality"],ans:0,exp:"'Meta' means 'after/beyond' and 'physika' means 'nature' — metaphysics literally means 'beyond/after nature.'"},
+  {id:129,sec:"Logic & Fallacies",ch:"Chapter 8/9",q:"A logical fallacy is best described as",opts:["An argument that is both valid and sound","An error in reasoning that makes an argument invalid","A deductive argument with false premises","A conclusion that contradicts the premises"],ans:1,exp:"A fallacy is an error in reasoning — it makes an argument appear compelling when the logical structure or evidence is actually flawed."},
+  {id:130,sec:"Logic & Fallacies",ch:"Chapter 8/9",q:"Logic differs from psychology in that logic",opts:["Describes how people actually think","Prescribes how people ought to think","Studies the development of the human brain","Focuses on emotional responses to events"],ans:1,exp:"Psychology describes how people actually think (descriptive); logic prescribes how reasoning ought to proceed (normative)."},
+  {id:131,sec:"Epistemology",ch:"Chapter 2/3",q:"Why is inductive reasoning described as probabilistic?",opts:["Because it relies on mathematical probability theory","Because new evidence could always overturn the conclusion","Because it is used only in scientific laboratories","Because it requires a minimum of ten observations"],ans:1,exp:"Inductive conclusions are probabilistic because future or unobserved instances might contradict them — no matter how many confirming cases we have."},
+  {id:132,sec:"Epistemology",ch:"Chapter 2/3",q:"Logic underpins all rational inquiry because it",opts:["Provides emotional guidance for decision-making","Ensures that conclusions are drawn from sound reasoning and evidence","Replaces the need for experimentation in science","Guarantees all arguments reach the same conclusion"],ans:1,exp:"Logic provides the standards of valid inference that all rational inquiry — science, philosophy, law, everyday reasoning — depends on."},
+  {id:133,sec:"GST Chapter 1",ch:"Chapter 1",q:"The philosopher who said 'The unexamined life is not worth living' was",opts:["Plato","Aristotle","Socrates","Descartes"],ans:2,exp:"Socrates famously declared that 'the unexamined life is not worth living' at his trial in Athens, emphasizing philosophy as a way of life."},
+  {id:134,sec:"Applied Ethics",ch:"Chapter 4",q:"Applied ethics refers to",opts:["The study of abstract moral theories only","The application of ethical principles to real-world issues and professions","The historical development of moral codes","The mathematical analysis of ethical decisions"],ans:1,exp:"Applied ethics takes normative theories (like utilitarianism or deontology) and applies them to concrete real-world problems like medicine, business, or the environment."},
+  {id:135,sec:"African Philosophy",ch:"Chapter 5",q:"Ethno-philosophy in African thought primarily refers to",opts:["The philosophy of African ethnic conflicts","The collective worldview and folk wisdom of African peoples","The study of African languages and dialects","A modern academic philosophy movement"],ans:1,exp:"Ethno-philosophy in Africa refers to collective folk wisdom, proverbs, and cosmological beliefs of African peoples — criticized by Hountonji for not being rigorous philosophy."},
+];
+
+// ============================================================
+// APP STATE
+// ============================================================
+let state = {
+  theme:'dark',
+  timerSetting:30,
+  questionCount:20,
+  questions:[],
+  currentIdx:0,
+  answers:[],
+  sessionStart:0,
+  timerVal:30,
+  timerInterval:null,
+  currentSession:null,
+  history: (() => { try { return JSON.parse(localStorage.getItem('phi_quiz_hist')||'[]'); } catch(e){return[];} })()
+};
+
+// ============================================================
+// UTILS
+// ============================================================
+const shuffle = a => [...a].sort(()=>Math.random()-0.5);
+const save = () => { try { localStorage.setItem('phi_quiz_hist', JSON.stringify(state.history)); } catch(e){} };
+const LETTERS = ['A','B','C','D'];
+const circumference = 2 * Math.PI * 22; // for timer ring r=22
+const gradeCirc = 2 * Math.PI * 48;     // for grade ring r=48
+
+function getGrade(pct){
+  if(pct>=90)return'A';if(pct>=80)return'B';if(pct>=70)return'C';if(pct>=60)return'D';return'F';
+}
+function getGradeColor(pct){
+  if(pct>=70)return'var(--accent)';if(pct>=50)return'var(--warn)';return'var(--wrong)';
+}
+
+// ============================================================
+// SCREEN MANAGEMENT
+// ============================================================
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active');s.style.animation='none';s.offsetHeight;});
+  const el = document.getElementById(id);
+  el.style.animation='';
+  el.classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ============================================================
+// SETUP SCREEN
+// ============================================================
+function initSetup(){
+  document.getElementById('totalQCount').textContent = ALL_Q.length;
+  document.getElementById('maxHint').textContent = ALL_Q.length;
+  updateStats();
+  showScreen('setup-screen');
+}
+
+function updateStats(){
+  const h = state.history;
+  if(!h.length){document.getElementById('statsRow').style.display='none';return;}
+  document.getElementById('statsRow').style.display='flex';
+  const avg = Math.round(h.reduce((s,x)=>s+(x.score/x.total)*100,0)/h.length);
+  const best = Math.round(Math.max(...h.map(x=>(x.score/x.total)*100)));
+  document.getElementById('statSessions').innerHTML = `<b>${h.length}</b> sessions`;
+  document.getElementById('statAvg').innerHTML = `<b>${avg}%</b> avg accuracy`;
+  document.getElementById('statBest').innerHTML = `<b>${best}%</b> best score`;
+}
+
+// Timer seg buttons
+document.getElementById('timerGroup').addEventListener('click',e=>{
+  const btn = e.target.closest('.seg-btn');
+  if(!btn) return;
+  document.querySelectorAll('#timerGroup .seg-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  state.timerSetting = parseInt(btn.dataset.val);
+});
+
+// Number input
+const numInput = document.getElementById('numQ');
+numInput.addEventListener('input',()=>{
+  const v = parseInt(numInput.value);
+  document.getElementById('startBtn').disabled = !v||v<1||v>ALL_Q.length;
+});
+
+// Start
+document.getElementById('startBtn').addEventListener('click',()=>{
+  const n = parseInt(numInput.value);
+  if(!n||n<1||n>ALL_Q.length) return;
+  state.questionCount = n;
+  state.questions = shuffle(ALL_Q).slice(0,n);
+  state.currentIdx = 0;
+  state.answers = [];
+  state.sessionStart = Date.now();
+  startQuiz();
+});
+
+// ============================================================
+// QUIZ
+// ============================================================
+function startQuiz(){
+  showScreen('quiz-screen');
+  renderQuestion();
+}
+
+function renderQuestion(){
+  const q = state.questions[state.currentIdx];
+  const total = state.questions.length;
+  const idx = state.currentIdx;
+
+  // Progress
+  document.getElementById('progressFill').style.width = `${(idx/total)*100}%`;
+  document.getElementById('qNum').textContent = idx+1;
+  document.getElementById('qTotal').textContent = `of ${total}`;
+  document.getElementById('qSection').textContent = q.sec;
+  document.getElementById('qChapter').textContent = q.ch;
+  document.getElementById('qText').textContent = q.q;
+  document.getElementById('feedbackWrap').innerHTML = '';
+
+  // Options
+  const wrap = document.getElementById('optionsWrap');
+  wrap.innerHTML = '';
+  q.opts.forEach((opt,i)=>{
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    btn.innerHTML = `<span class="opt-letter">${LETTERS[i]}</span><span class="opt-text">${opt}</span>`;
+    btn.addEventListener('click',()=>selectAnswer(i));
+    wrap.appendChild(btn);
+  });
+
+  // Timer
+  startTimer();
+}
+
+function startTimer(){
+  clearInterval(state.timerInterval);
+  state.timerVal = state.timerSetting;
+  updateTimerUI(state.timerVal);
+
+  state.timerInterval = setInterval(()=>{
+    state.timerVal--;
+    updateTimerUI(state.timerVal);
+    if(state.timerVal<=0){
+      clearInterval(state.timerInterval);
+      selectAnswer(null);
+    }
+  },1000);
+}
+
+function updateTimerUI(val){
+  const ring = document.getElementById('timerRing');
+  const txt = document.getElementById('timerText');
+  const pct = val / state.timerSetting;
+  const offset = circumference * (1-pct);
+  ring.style.strokeDashoffset = offset;
+
+  let color;
+  if(pct>0.5) color='var(--accent)';
+  else if(pct>0.25) color='var(--warn)';
+  else color='var(--wrong)';
+  ring.style.stroke = color;
+  txt.style.fill = color;
+  txt.textContent = val;
+
+  if(val<=5 && val>0){
+    ring.style.animation='countdownBlink 0.5s ease infinite';
+  } else {
+    ring.style.animation='none';
+  }
+}
+
+function selectAnswer(chosen){
+  clearInterval(state.timerInterval);
+  const q = state.questions[state.currentIdx];
+  const correct = chosen === q.ans;
+
+  // Style buttons
+  const btns = document.querySelectorAll('.opt-btn');
+  btns.forEach((btn,i)=>{
+    btn.setAttribute('disabled','');
+    btn.classList.add('revealed');
+    if(i===q.ans) btn.classList.add('correct');
+    else if(i===chosen && !correct) btn.classList.add('wrong');
+    else btn.classList.add('dimmed');
+    // add icon
+    if(i===q.ans){btn.innerHTML+=`<span class="opt-icon">✓</span>`;}
+    else if(i===chosen && !correct){btn.innerHTML+=`<span class="opt-icon">✗</span>`;}
+  });
+
+  // Record answer
+  state.answers.push({
+    q:q.q, sec:q.sec, ch:q.ch,
+    userAns:chosen,
+    userAnsText:chosen!==null?q.opts[chosen]:null,
+    correctAns:q.ans, correctAnsText:q.opts[q.ans],
+    correct, exp:q.exp, expired:chosen===null
+  });
+
+  // Feedback
+  const fb = document.getElementById('feedbackWrap');
+  let cls='feedback ', head, body='';
+  if(chosen===null){
+    cls+='fb-timeout';head='⏰ Time\'s up!';
+    body=`<div class="fb-correct-ans">Correct answer: <b>${q.opts[q.ans]}</b></div>`;
+  } else if(correct){
+    cls+='fb-correct';head='✅ Correct!';
+  } else {
+    cls+='fb-wrong';head='❌ Incorrect';
+    body=`<div class="fb-correct-ans">Correct answer: <b>${q.opts[q.ans]}</b></div>`;
+  }
+  const isLast = state.currentIdx+1>=state.questions.length;
+  fb.innerHTML=`<div class="${cls}">
+    <div class="fb-header">${head}</div>
+    ${body}
+    <div class="fb-expl">${q.exp}</div>
+    <button class="next-btn" onclick="advanceQuestion()">${isLast?'See Results →':'Next Question →'}</button>
+  </div>`;
+}
+
+function advanceQuestion(){
+  if(state.currentIdx+1>=state.questions.length){
+    finishQuiz();
+  } else {
+    state.currentIdx++;
+    renderQuestion();
+  }
+}
+
+// ============================================================
+// RESULTS
+// ============================================================
+function finishQuiz(){
+  const score = state.answers.filter(a=>a.correct).length;
+  const total = state.questions.length;
+  const timeTaken = Math.round((Date.now()-state.sessionStart)/1000);
+  const session = {score,total,answers:state.answers,timeTaken,timerSetting:state.timerSetting,date:new Date().toISOString()};
+  state.currentSession = session;
+  state.history.push(session);
+  save();
+  renderResults(session);
+  showScreen('results-screen');
+}
+
+function renderResults(session){
+  const {score,total,timeTaken,timerSetting} = session;
+  const pct = Math.round((score/total)*100);
+  const grade = getGrade(pct);
+  const gcolor = getGradeColor(pct);
+
+  // Hero
+  const arc = document.getElementById('gradeArc');
+  arc.style.stroke = gcolor;
+  arc.style.strokeDashoffset = gradeCirc*(1-pct/100);
+  document.getElementById('gradeLetter').textContent = grade;
+  document.getElementById('gradeLetter').style.color = gcolor;
+  document.getElementById('resultsScore').textContent = `${score}/${total}`;
+  document.getElementById('resultsPct').textContent = `${pct}% Accuracy`;
+  document.getElementById('resultsPct').style.color = gcolor;
+  const m=Math.floor(timeTaken/60), s=timeTaken%60;
+  document.getElementById('resultsMeta').textContent = `⏱ ${m}m ${s}s · ${timerSetting}s/question`;
+
+  // Topic stats
+  const topicStats = {};
+  session.answers.forEach(a=>{
+    if(!topicStats[a.sec]) topicStats[a.sec]={correct:0,total:0,ch:a.ch};
+    topicStats[a.sec].total++;
+    if(a.correct) topicStats[a.sec].correct++;
+  });
+
+  // Topic bars
+  const barsEl = document.getElementById('topicBars');
+  barsEl.innerHTML='';
+  Object.entries(topicStats).forEach(([name,s])=>{
+    const acc=Math.round((s.correct/s.total)*100);
+    const col = acc<70?'var(--wrong)':'var(--accent)';
+    barsEl.innerHTML+=`<div class="topic-bar">
+      <div class="topic-bar-hd">
+        <span class="topic-name">${name}</span>
+        <span class="topic-acc" style="color:${col}">${acc}% (${s.correct}/${s.total})</span>
+      </div>
+      <div class="topic-track"><div class="topic-fill" style="--w:${acc}%;width:${acc}%;background:${col}"></div></div>
+    </div>`;
+  });
+
+  // Weak topics
+  const weak = Object.entries(topicStats)
+    .map(([name,s])=>({name,acc:Math.round((s.correct/s.total)*100),...s}))
+    .filter(t=>t.acc<70).sort((a,b)=>a.acc-b.acc);
+
+  const weakSec = document.getElementById('weakSection');
+  if(weak.length){
+    weakSec.style.display='block';
+    document.getElementById('weakList').innerHTML = weak.map(t=>`
+      <div class="weak-card">
+        <span class="weak-icon">🔴</span>
+        <div>
+          <div class="weak-name">${t.name}</div>
+          <div class="weak-detail">${t.acc}% accuracy · ${t.correct}/${t.total} correct</div>
+        </div>
+      </div>`).join('');
+    const chapters = [...new Set(weak.map(t=>ALL_Q.find(q=>q.sec===t.name)?.ch).filter(Boolean))];
+    document.getElementById('chapterRecs').innerHTML = chapters.map(c=>`<div class="ch-rec">${c}</div>`).join('');
+  } else {
+    weakSec.style.display='none';
+  }
+
+  // History
+  const histSec = document.getElementById('histSection');
+  const hist = state.history.slice(-12);
+  if(hist.length>1){
+    histSec.style.display='block';
+    const maxPct = Math.max(...hist.map(h=>Math.round((h.score/h.total)*100)));
+    document.getElementById('histGraph').innerHTML = hist.map((h,i)=>{
+      const hp = Math.round((h.score/h.total)*100);
+      const barH = Math.round((hp/100)*72);
+      const col = hp>=70?'var(--accent)':'var(--wrong)';
+      return `<div class="hist-col">
+        <div class="hist-bar" style="height:${barH}px;background:${col}"></div>
+        <span class="hist-lbl">${hp}%</span>
+      </div>`;
+    }).join('');
+  } else {
+    histSec.style.display='none';
+  }
+}
+
+// ============================================================
+// EXPORT PDF
+// ============================================================
+function exportPDF(){
+  const session = state.currentSession;
+  if(!session) return;
+  const topicStats={};
+  session.answers.forEach(a=>{
+    if(!topicStats[a.sec]) topicStats[a.sec]={correct:0,total:0,ch:a.ch};
+    topicStats[a.sec].total++;
+    if(a.correct) topicStats[a.sec].correct++;
+  });
+  const weak=Object.entries(topicStats).map(([n,s])=>({name:n,acc:Math.round((s.correct/s.total)*100),...s})).filter(t=>t.acc<70).sort((a,b)=>a.acc-b.acc);
+  const chapters=[...new Set(weak.map(t=>ALL_Q.find(q=>q.sec===t.name)?.ch).filter(Boolean))];
+  const pct=Math.round((session.score/session.total)*100);
+  const m=Math.floor(session.timeTaken/60),s=session.timeTaken%60;
+
+  const html=`<!DOCTYPE html><html><head><title>Philosophy Quiz Report</title>
+  <style>
+    body{font-family:Georgia,serif;color:#1a1a30;margin:40px;line-height:1.7;font-size:13px}
+    h1{color:#4a3dcc;border-bottom:3px solid #4a3dcc;padding-bottom:10px;font-size:22px}
+    h2{color:#333;margin-top:28px;border-left:4px solid #7c6aff;padding-left:12px;font-size:16px}
+    h3{font-size:13px;color:#555;margin:16px 0 8px}
+    .summary{background:#f0eeff;padding:20px;border-radius:8px;margin:18px 0;display:flex;gap:30px;flex-wrap:wrap}
+    .score-big{font-size:52px;font-weight:bold;color:#4a3dcc;font-family:Georgia,serif;line-height:1}
+    .meta{color:#555;font-size:12px;margin-top:4px}
+    .weak{background:#fff0f0;border-left:4px solid #e74c3c;padding:10px 14px;margin:8px 0;border-radius:4px}
+    .rec{background:#f0eeff;border-left:4px solid #7c6aff;padding:10px 14px;margin:8px 0;border-radius:4px}
+    .qblock{border:1px solid #ddd;border-radius:8px;padding:14px;margin:12px 0;page-break-inside:avoid}
+    .correct{color:#16a34a;font-weight:bold}
+    .wrong{color:#dc2626;font-weight:bold}
+    .expl{background:#f9f9f9;padding:10px;border-radius:4px;margin-top:8px;color:#444;font-style:italic}
+    table{width:100%;border-collapse:collapse;margin:14px 0}
+    th{background:#4a3dcc;color:white;padding:8px 12px;text-align:left;font-size:12px}
+    td{padding:8px 12px;border-bottom:1px solid #ddd;font-size:12px}
+    .chip{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:bold}
+    .chip-g{background:#dcfce7;color:#16a34a}.chip-b{background:#fee2e2;color:#dc2626}
+    @page{margin:2cm}
+  </style></head><body>
+  <h1>📚 Philosophy &amp; Logic — Study Report</h1>
+  <p style="color:#888">Generated: ${new Date().toLocaleString()}</p>
+  <div class="summary">
+    <div><div class="score-big">${session.score}/${session.total}</div><div class="meta">${pct}% Accuracy · Grade ${getGrade(pct)}</div></div>
+    <div style="padding-top:8px">
+      <div class="meta">⏱ Time: ${m}m ${s}s</div>
+      <div class="meta">⏰ Timer/Q: ${session.timerSetting}s</div>
+      <div class="meta">📅 Date: ${new Date(session.date).toLocaleDateString()}</div>
+    </div>
+  </div>
+  <h2>📊 Topic Breakdown</h2>
+  <table><tr><th>Topic</th><th>Correct</th><th>Total</th><th>Accuracy</th></tr>
+  ${Object.entries(topicStats).map(([n,s])=>{const a=Math.round(s.correct/s.total*100);return`<tr><td>${n}</td><td>${s.correct}</td><td>${s.total}</td><td><span class="chip ${a>=70?'chip-g':'chip-b'}">${a}%</span></td></tr>`}).join('')}
+  </table>
+  ${weak.length?`<h2>⚠️ Weak Topics (Below 70%)</h2>
+  ${weak.map(t=>`<div class="weak">🔴 <strong>${t.name}</strong> — ${t.acc}% (${t.correct}/${t.total})</div>`).join('')}
+  <h2>📖 Chapter Recommendations</h2>
+  ${chapters.map(c=>`<div class="rec">📌 Re-read <strong>${c}</strong></div>`).join('')}`:'<h2>✅ Excellent — No weak topics!</h2>'}
+  <h2>📝 Full Question Review</h2>
+  ${session.answers.map((a,i)=>`<div class="qblock">
+    <strong>Q${i+1}.</strong> ${a.q}<br>
+    <span class="${a.correct?'correct':'wrong'}">Your answer: ${a.userAnsText||'[expired]'} ${a.correct?'✓':'✗'}</span><br>
+    ${!a.correct?`<span class="correct">Correct: ${a.correctAnsText}</span><br>`:''}
+    <div class="expl">💡 ${a.exp}</div>
+    <small style="color:#999">Section: ${a.sec} · ${a.ch}</small>
+  </div>`).join('')}
+  </body></html>`;
+
+  const w=window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  setTimeout(()=>w.print(),600);
+}
+
+// ============================================================
+// RESULT ACTIONS
+// ============================================================
+document.getElementById('restartBtn').addEventListener('click',()=>{ numInput.value=''; document.getElementById('startBtn').disabled=true; initSetup(); });
+document.getElementById('homeBtn').addEventListener('click',()=>{ numInput.value=''; document.getElementById('startBtn').disabled=true; initSetup(); });
+document.getElementById('exportBtn').addEventListener('click',exportPDF);
+
+// ============================================================
+// THEME TOGGLE
+// ============================================================
+const themeBtn = document.getElementById('themeToggle');
+themeBtn.addEventListener('click',()=>{
+  state.theme = state.theme==='dark'?'light':'dark';
+  document.body.classList.toggle('light', state.theme==='light');
+  themeBtn.textContent = state.theme==='dark'?'🌙':'☀️';
+});
+
+// ============================================================
+// INIT
+// ============================================================
+initSetup();
+</script>
+</body>
+</html>

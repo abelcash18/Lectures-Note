@@ -1,0 +1,229 @@
+<!DOCTYPE html><html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CBT Quiz Game</title>
+<style>
+  :root{--bg:#0f172a;--card:#1e293b;--muted:#334155;--ok:#16a34a;--bad:#dc2626;--accent:#60a5fa}
+  body{font-family:Arial,system-ui;background:var(--bg);color:#fff;margin:0;padding:20px}
+  .container{max-width:900px;margin:auto;background:var(--card);padding:20px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.4);position:relative;overflow:hidden}
+  .top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .btn{padding:10px 14px;border:none;border-radius:10px;cursor:pointer}
+  .btn.primary{background:var(--accent);color:#000}
+  .btn.ghost{background:transparent;border:1px solid #475569;color:#fff}
+  .btn.warn{background:#ef4444}
+  .opt{display:block;margin:10px 0;padding:12px;background:var(--muted);border-radius:10px;cursor:pointer;transition:.2s}
+  .opt:hover{transform:translateY(-1px)}
+  .opt.correct{background:var(--ok)}
+  .opt.wrong{background:var(--bad)}
+  .opt.disabled{opacity:.7;pointer-events:none}
+  .progress{height:8px;background:#0b1222;border-radius:999px;overflow:hidden;margin:12px 0}
+  .bar{height:100%;background:var(--accent);width:0%}
+  #timer.warn{color:#ef4444}
+  .overlay{position:absolute;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:5}
+  .overlay.show{display:flex}
+  .card{background:#0b1222;padding:20px;border-radius:16px;text-align:center}
+  .fade{animation:fade .25s ease}
+  @keyframes fade{from{opacity:.2;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+  .chip{padding:8px;border-radius:999px;background:#0b1222;border:1px solid #475569;cursor:pointer}
+  .chip.answered{border-color:var(--ok)}
+  .chip.unanswered{border-color:var(--bad)}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="overlay" id="pauseOverlay"><div class="card"><h2>Game Paused</h2><button class="btn primary" onclick="resume()">Resume</button></div></div>  <div class="top">
+    <div>
+      <h3>CBT Quiz Game</h3>
+      <div id="levelLabel">Level 1 (1–20)</div>
+    </div>
+    <div>
+      <span id="timer">Time: 30:00</span>
+    </div>
+  </div>  <div class="progress"><div class="bar" id="bar"></div></div>  <div id="qa" class="fade">
+    <p id="q"></p>
+    <div id="opts"></div>
+  </div>  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
+    <button class="btn ghost" onclick="pause()">Pause</button>
+    <button class="btn ghost" onclick="openReview()">Review</button>
+    <button class="btn primary" onclick="next()">Next</button>
+    <button class="btn warn" onclick="submit()">Submit</button>
+  </div>  <div id="review" style="display:none;margin-top:15px" class="fade">
+    <h4>Review Questions</h4>
+    <div class="grid" id="reviewGrid"></div>
+    <div style="margin-top:10px">
+      <button class="btn primary" onclick="closeReview()">Back</button>
+      <button class="btn warn" onclick="submit()">Submit Anyway</button>
+    </div>
+  </div>
+</div><script>
+// --- DATA (kept same 60) ---
+let quiz = [
+{q:"Software engineering is:",options:["Programming","Testing","Engineering approach","Debugging"],answer:2},
+{q:"Software includes:",options:["Code","Docs","Code+Docs","Hardware"],answer:2},
+{q:"Abstraction means:",options:["Coding","Ignore details","Debug","Test"],answer:1},
+{q:"Decomposition means:",options:["Combine","Break parts","Test","Design"],answer:1},
+{q:"Software product is:",options:["Hardware","Code","Complete solution","Algorithm"],answer:2},
+{q:"Good software must be:",options:["Cheap","Fast","Reliable","Large"],answer:2},
+{q:"Transitional characteristic:",options:["Security","Portability","Efficiency","Accuracy"],answer:1},
+{q:"Maintenance characteristic:",options:["Scalability","Usability","Safety","Budget"],answer:0},
+{q:"Operational characteristic:",options:["Portability","Efficiency","Flexibility","Reuse"],answer:1},
+{q:"Software engineering helps:",options:["Increase","Reduce complexity","Remove coding","Avoid testing"],answer:1},
+{q:"IEEE defines SE as:",options:["Random","Systematic","Coding","Testing"],answer:1},
+{q:"A program is:",options:["Software","Hardware","Executable","OS"],answer:2},
+{q:"SE is needed for:",options:["Small","Large systems","Games","Hardware"],answer:1},
+{q:"Scalability means:",options:["Small","Growth","Testing","Coding"],answer:1},
+{q:"Reusability belongs to:",options:["Operational","Transitional","Maintenance","None"],answer:1},
+{q:"Maintainability belongs to:",options:["Operational","Transitional","Maintenance","Design"],answer:2},
+{q:"Efficiency is:",options:["Maintenance","Operational","Transitional","Testing"],answer:1},
+{q:"Adaptability is:",options:["Operational","Transitional","Maintenance","Coding"],answer:1},
+{q:"Security is:",options:["Operational","Transitional","Maintenance","Design"],answer:0},
+{q:"Flexibility is:",options:["Maintenance","Operational","Transitional","Testing"],answer:0},
+{q:"SDLC stands for:",options:["Design","Development Life Cycle","Loop","None"],answer:1},
+{q:"First phase:",options:["Coding","Testing","Feasibility","Design"],answer:2},
+{q:"Last phase:",options:["Design","Testing","Maintenance","Coding"],answer:2},
+{q:"Waterfall is:",options:["Iterative","Linear","Random","Agile"],answer:1},
+{q:"Waterfall weakness:",options:["Flexible","Error handling","No feedback","Fast"],answer:2},
+{q:"Iterative model:",options:["No errors","Feedback","No testing","None"],answer:1},
+{q:"Prototype is:",options:["Final","Sample","Code","Test"],answer:1},
+{q:"Evolutionary model:",options:["One","Incremental","Linear","Static"],answer:1},
+{q:"SDLC ensures:",options:["Chaos","Structure","Delay","Errors"],answer:1},
+{q:"Entry criteria:",options:["End","Start","Test","Code"],answer:1},
+{q:"Exit criteria:",options:["Start","End","Debug","Test"],answer:1},
+{q:"SRS means:",options:["Spec","Ready","Run","None"],answer:0},
+{q:"UML is used for:",options:["Coding","Design","Testing","Debug"],answer:1},
+{q:"Use case diagram shows:",options:["Classes","Users","Code","Testing"],answer:1},
+{q:"Class diagram shows:",options:["Objects","Structure","Flow","Testing"],answer:1},
+{q:"Activity diagram shows:",options:["Flow","Class","Code","Bug"],answer:0},
+{q:"Life cycle model is:",options:["Random","Structured","Code","Testing"],answer:1},
+{q:"SDLC helps:",options:["Confusion","Organization","Errors","Delay"],answer:1},
+{q:"Prototyping used when:",options:["Clear","Unclear","Testing","Coding"],answer:1},
+{q:"Iterative improves:",options:["Errors","Feedback","Delay","Bugs"],answer:1},
+{q:"Unit testing tests:",options:["System","Modules","Users","Hardware"],answer:1},
+{q:"Integration testing:",options:["Combine","Code","Design","Debug"],answer:0},
+{q:"Black box testing:",options:["Internal","External","Code","Debug"],answer:1},
+{q:"White box testing:",options:["No code","Internal","Output","UI"],answer:1},
+{q:"Regression testing:",options:["New","Re-testing","Coding","Design"],answer:1},
+{q:"Stress testing:",options:["Normal","Extreme","No load","Code"],answer:1},
+{q:"Maintenance takes:",options:["10%","20%","60%","80%"],answer:2},
+{q:"Corrective maintenance:",options:["Improve","Fix bugs","Adapt","Design"],answer:1},
+{q:"Adaptive maintenance:",options:["Fix","Improve","New env","Design"],answer:2},
+{q:"Perfective maintenance:",options:["Fix","Improve","Code","Test"],answer:1},
+{q:"Reliability means:",options:["Speed","Accuracy","Dependability","Cost"],answer:2},
+{q:"MTBF:",options:["Failure","Repair","Interval","Code"],answer:2},
+{q:"CASE tools:",options:["Manual","Automated","Hardware","OS"],answer:1},
+{q:"Software reuse:",options:["New","Reuse","Testing","Debug"],answer:1},
+{q:"Configuration management:",options:["Coding","Control","Testing","Debug"],answer:1},
+{q:"Risk management:",options:["Coding","Identify risks","Testing","Debug"],answer:1},
+{q:"Legacy system:",options:["New","Old system","Code","OS"],answer:1},
+{q:"Reverse engineering:",options:["Coding","Extract design","Testing","Debug"],answer:1},
+{q:"Reengineering:",options:["Reverse","Reverse+forward","Testing","Coding"],answer:1},
+{q:"Software quality ensures:",options:["Errors","Reliability","Bugs","Delay"],answer:1}
+];
+
+// shuffle
+quiz = quiz.sort(()=>Math.random()-0.5);
+
+// state
+let idx=0, answers=new Array(quiz.length).fill(null), locked=false;
+let level=1; // 1:0-19, 2:20-39, 3:40-59
+let levelRanges=[[0,19],[20,39],[40,59]];
+let score=0, points=0;
+
+// timer (30 min)
+let time=1800, t=null; startTimer();
+function startTimer(){ t=setInterval(()=>{
+  let m=Math.floor(time/60), s=time%60; 
+  const el=document.getElementById('timer');
+  el.textContent=`Time: ${m}:${s<10?'0'+s:s}`;
+  if(time<60) el.classList.add('warn');
+  time--; if(time<0){clearInterval(t); submit();}
+},1000)}
+function pause(){ clearInterval(t); document.getElementById('pauseOverlay').classList.add('show'); }
+function resume(){ document.getElementById('pauseOverlay').classList.remove('show'); startTimer(); }
+
+function currentRange(){ return levelRanges[level-1]; }
+function inLevel(i){ const [a,b]=currentRange(); return i>=a && i<=b; }
+
+function render(){
+  const [a,b]=currentRange();
+  document.getElementById('levelLabel').textContent=`Level ${level} (${a+1}–${b+1})`;
+  if(!inLevel(idx)) idx=a;
+  const q=quiz[idx];
+  document.getElementById('q').textContent=`${idx+1}. ${q.q}`;
+  const box=document.getElementById('opts'); box.innerHTML='';
+  q.options.forEach((o,i)=>{
+    const d=document.createElement('div'); d.className='opt'; d.textContent=o;
+    if(answers[idx]!==null) d.classList.add('disabled');
+    d.onclick=()=>select(i,d);
+    box.appendChild(d);
+  });
+  updateProgress();
+}
+
+function select(i,el){ if(locked || answers[idx]!==null) return; locked=true;
+  answers[idx]=i;
+  const q=quiz[idx];
+  const nodes=[...document.querySelectorAll('.opt')];
+  nodes.forEach((n,k)=>{
+    if(k===q.answer) n.classList.add('correct');
+    if(k===i && i!==q.answer) n.classList.add('wrong');
+    n.classList.add('disabled');
+  });
+  setTimeout(()=>{locked=false;},300);
+}
+
+function next(){ const [a,b]=currentRange(); if(idx<b){ idx++; render(); } else { levelComplete(); } }
+
+function updateProgress(){ const [a,b]=currentRange(); const done=answers.slice(a,b+1).filter(v=>v!==null).length;
+  const total=(b-a+1); const pct=( (idx-a+1)/total )*100; document.getElementById('bar').style.width=pct+'%'; }
+
+function levelScore(){ const [a,b]=currentRange(); let c=0; for(let i=a;i<=b;i++){ if(answers[i]===quiz[i].answer) c++; } return {c, total:(b-a+1)}; }
+
+function levelComplete(){ const {c,total}=levelScore(); const pct=Math.round(c/total*100);
+  const stars = pct>=85?'⭐⭐⭐':pct>=70?'⭐⭐':'⭐';
+  const ok = pct>=70;
+  alert(`Level ${level} Completed\nScore: ${c}/${total} (${pct}%)\n${stars}`);
+  points += c*10;
+  if(ok && level<3){ level++; render(); }
+  else if(level===3){ submit(); }
+  else { // retry level
+    // keep answers, allow review
+    openReview();
+  }
+}
+
+// review
+function openReview(){ document.getElementById('review').style.display='block'; buildReview(); }
+function closeReview(){ document.getElementById('review').style.display='none'; }
+function buildReview(){ const g=document.getElementById('reviewGrid'); g.innerHTML='';
+  const [a,b]=currentRange();
+  for(let i=a;i<=b;i++){
+    const c=document.createElement('div'); c.className='chip '+(answers[i]!==null?'answered':'unanswered'); c.textContent=i+1;
+    c.onclick=()=>{ idx=i; closeReview(); render(); };
+    g.appendChild(c);
+  }
+}
+
+function grade(p){ return p>=80?'A':p>=70?'B':p>=60?'C':p>=50?'D':'F'; }
+
+function submit(){ clearInterval(t);
+  let correct=0; quiz.forEach((q,i)=>{ if(answers[i]===q.answer) correct++; });
+  const pct=Math.round(correct/quiz.length*100);
+  const msg = pct>=70?'Excellent 🎉':pct>=50?'Good 👍':'Keep Practicing 📚';
+  document.querySelector('.container').innerHTML = `
+  <div class='card'>
+    <h2>Result</h2>
+    <p>Score: ${correct}/${quiz.length}</p>
+    <p>Percentage: ${pct}%</p>
+    <p>Grade: ${grade(pct)}</p>
+    <p>Points: ${points}</p>
+    <p>${msg}</p>
+  </div>`;
+}
+
+// init
+render();
+</script></body>
+</html>
